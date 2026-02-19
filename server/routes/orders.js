@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { Order, workerConnection } = require('../db');
+const { Order, conn } = require('../db');
 const authenticateWorker = require('../middleware/workerAuth');
 const authenticateUser = require('../middleware/userAuth');
 const createWorkerModel = require('../models/Worker');
-const Worker = createWorkerModel(workerConnection);
+const Worker = createWorkerModel(conn);
+
 
 // ─── DIRECT BOOKING (no Cart, no Stripe) ────────────────────────────────────
 // POST /api/orders/direct — requires user JWT via Authorization header

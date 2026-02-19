@@ -14,30 +14,44 @@ const dotenv = require("dotenv");
 // Load environment variables
 dotenv.config();
 
-// First create a connection without specifying a database
-const createDbConnection = mysql.createPool({
-  host: process.env.MYSQL_HOST || 'localhost',
-  user: process.env.MYSQL_USER || 'root',
-  password: process.env.MYSQL_PASSWORD || '',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  connectTimeout: 60000, // 60 seconds timeout
-  debug: process.env.NODE_ENV === 'development'
-});
+// MySQL connection pools — created lazily on first use so server starts
+// even when MYSQL_* env vars are not set in this environment.
+let _createDbConnection = null;
+let _pool = null;
 
-// Create a MySQL connection pool (to be used after database is ensured)
-const pool = mysql.createPool({
-  host: process.env.MYSQL_HOST || 'localhost',
-  user: process.env.MYSQL_USER || 'root',
-  password: process.env.MYSQL_PASSWORD || '',
-  database: process.env.MYSQL_DATABASE || 'local_connect_db',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  connectTimeout: 60000, // 60 seconds timeout
-  debug: process.env.NODE_ENV === 'development'
-});
+const getCreateDbConnection = () => {
+  if (!_createDbConnection) {
+    _createDbConnection = mysql.createPool({
+      host: process.env.MYSQL_HOST || 'localhost',
+      user: process.env.MYSQL_USER || 'root',
+      password: process.env.MYSQL_PASSWORD || '',
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      connectTimeout: 60000,
+      debug: process.env.NODE_ENV === 'development'
+    });
+  }
+  return _createDbConnection;
+};
+
+const getPool = () => {
+  if (!_pool) {
+    _pool = mysql.createPool({
+      host: process.env.MYSQL_HOST || 'localhost',
+      user: process.env.MYSQL_USER || 'root',
+      password: process.env.MYSQL_PASSWORD || '',
+      database: process.env.MYSQL_DATABASE || 'local_connect_db',
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      connectTimeout: 60000,
+      debug: process.env.NODE_ENV === 'development'
+    });
+  }
+  return _pool;
+};
+
 
 // Ensure upload directories exist
 const uploadDir = path.join(__dirname, "../uploads");
@@ -88,24 +102,29 @@ const uploadFields = upload.fields([
 
 // Ensure the MySQL database and tables exist
 const initializeDatabase = async () => {
+  // Skip MySQL setup if not configured in this environment
+  if (!process.env.MYSQL_HOST) {
+    console.log('⚠️  MYSQL_HOST not set — Reviews (MySQL) feature is disabled.');
+    return;
+  }
   try {
     console.log(`Connecting to MySQL at ${process.env.MYSQL_HOST} with user ${process.env.MYSQL_USER}...`);
     // First create database if it doesn't exist
-    const connection = await createDbConnection.getConnection();
+    const connection = await getCreateDbConnection().getConnection();
     console.log('Successfully connected to MySQL server');
-    
+
     const dbName = process.env.MYSQL_DATABASE || 'local_connect_db';
-    
+
     // Create database if it doesn't exist
     await connection.query(`CREATE DATABASE IF NOT EXISTS ${dbName}`);
     connection.release();
-    
+
     console.log(`Database ${dbName} ensured`);
-    
+
     // Now create tables in the database
-    const dbConnection = await pool.getConnection();
+    const dbConnection = await getPool().getConnection();
     console.log(`Successfully connected to database ${dbName}`);
-    
+
     // Create the reviews table if it doesn't exist
     await dbConnection.query(`
       CREATE TABLE IF NOT EXISTS reviews (
@@ -133,7 +152,7 @@ const initializeDatabase = async () => {
         created_at DATETIME NOT NULL
       )
     `);
-    
+
     // Create the review_images table if it doesn't exist
     await dbConnection.query(`
       CREATE TABLE IF NOT EXISTS review_images (
@@ -146,7 +165,7 @@ const initializeDatabase = async () => {
         FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE
       )
     `);
-    
+
     dbConnection.release();
     console.log("MySQL database tables initialized successfully");
   } catch (error) {
@@ -156,7 +175,7 @@ const initializeDatabase = async () => {
       user: process.env.MYSQL_USER,
       database: process.env.MYSQL_DATABASE
     });
-    
+
     if (error.code === 'ECONNREFUSED') {
       console.error("Connection refused. Please make sure MySQL server is running and accessible.");
     } else if (error.code === 'ER_ACCESS_DENIED_ERROR') {
@@ -169,6 +188,7 @@ const initializeDatabase = async () => {
 
 // Initialize database tables when the server starts
 initializeDatabase();
+
 
 // POST /api/reviews - Submit a new review
 router.post("/", async (req, res) => {
@@ -192,7 +212,7 @@ router.post("/", async (req, res) => {
     try {
       console.log("Request body received:", req.body);
       console.log("Files received:", req.files);
-      
+
       // Extract form fields
       const {
         name,
@@ -224,7 +244,7 @@ router.post("/", async (req, res) => {
       // Extract file paths from the request
       if (req.files) {
         console.log('Files received:', JSON.stringify(req.files));
-        
+
         // Process review images
         if (req.files.reviewImages) {
           req.files.reviewImages.forEach((file) => {
@@ -237,7 +257,7 @@ router.post("/", async (req, res) => {
             });
           });
         }
-        
+
         // Process additional images
         if (req.files.additionalImages) {
           req.files.additionalImages.forEach((file) => {
@@ -263,7 +283,7 @@ router.post("/", async (req, res) => {
       const followUpNeededValue = follow_up_needed === "1" || follow_up_needed === 1 || follow_up_needed === "true" || follow_up_needed === true ? 1 : 0;
       const hasIssueValue = has_issue === "1" || has_issue === 1 || has_issue === "true" || has_issue === true ? 1 : 0;
       const consentToPublishValue = consent_to_publish === "1" || consent_to_publish === 1 || consent_to_publish === "true" || consent_to_publish === true ? 1 : 0;
-      
+
       // Parse numeric values
       const overallSatisfactionValue = parseInt(overall_satisfaction) || 0;
       const qualityOfWorkValue = parseInt(quality_of_work) || 0;
@@ -276,7 +296,7 @@ router.post("/", async (req, res) => {
       const connection = await pool.getConnection();
       try {
         await connection.beginTransaction();
-        
+
         console.log('Inserting review into database with fields:');
         console.log({
           name,
@@ -301,7 +321,7 @@ router.post("/", async (req, res) => {
           status,
           created_at: mysqlDatetime
         });
-        
+
         // Insert review
         const [result] = await connection.execute(
           `INSERT INTO reviews (
@@ -335,10 +355,10 @@ router.post("/", async (req, res) => {
             mysqlDatetime
           ]
         );
-        
+
         console.log('Review inserted successfully, ID:', result.insertId);
         const reviewId = result.insertId;
-        
+
         // Save image paths to database if images were uploaded
         if (reviewImages.length > 0) {
           console.log('Saving review images:', reviewImages.length);
@@ -355,7 +375,7 @@ router.post("/", async (req, res) => {
             );
           }
         }
-        
+
         if (additionalImages.length > 0) {
           console.log('Saving additional images:', additionalImages.length);
           for (const image of additionalImages) {
@@ -371,10 +391,10 @@ router.post("/", async (req, res) => {
             );
           }
         }
-        
+
         await connection.commit();
         console.log('Transaction committed');
-        
+
         // Return success response
         return res.status(201).json({
           success: true,
@@ -402,33 +422,33 @@ router.post("/", async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     console.log("[GET /] Attempting to connect to database...");
-    
+
     const connection = await pool.getConnection();
     console.log("[GET /] Successfully connected to database");
-    
+
     try {
       console.log("[GET /] Executing query to fetch all reviews");
       const [reviews] = await connection.query(`
         SELECT * FROM reviews ORDER BY created_at DESC
       `);
-      
+
       console.log(`[GET /] Query completed, found ${reviews.length} reviews`);
-      
+
       // Fetch images for all reviews
       let reviewsWithImages = [...reviews];
-      
+
       if (reviews.length > 0) {
         try {
           // Extract all review IDs
           const reviewIds = reviews.map(review => review.id);
           console.log(`[GET /] Fetching images for reviews with IDs: ${reviewIds.join(', ')}`);
-          
+
           // Check if review_images table exists
           const [tableCheck] = await connection.query(`
             SELECT COUNT(*) as count FROM information_schema.tables 
             WHERE table_schema = ? AND table_name = 'review_images'
           `, [process.env.MYSQL_DATABASE || 'local_connect_db']);
-          
+
           if (tableCheck[0].count === 0) {
             console.log("[GET /] review_images table does not exist");
           } else {
@@ -438,18 +458,18 @@ router.get("/", async (req, res) => {
               let query = 'SELECT * FROM review_images WHERE review_id IN (';
               const placeholders = reviewIds.map(() => '?').join(',');
               query += placeholders + ')';
-              
+
               try {
                 const [allImages] = await connection.query(query, reviewIds);
                 console.log(`[GET /] Found ${allImages.length} images for reviews`);
-                
+
                 // Map images to their respective reviews
                 reviewsWithImages = reviews.map(review => {
                   const reviewImages = allImages.filter(img => img.review_id === review.id)
                     .map(img => {
                       // Convert file paths to relative URLs for web access
                       let path = img.path || img.file_path;
-                      
+
                       // If path is already a relative URL starting with /uploads, keep it
                       if (path && !path.startsWith('/uploads')) {
                         // Extract just the filename from the path
@@ -457,13 +477,13 @@ router.get("/", async (req, res) => {
                         // Create a proper relative URL
                         path = `/uploads/reviews/${filename}`;
                       }
-                      
+
                       return {
                         ...img,
                         path: path
                       };
                     });
-                  
+
                   return {
                     ...review,
                     reviewImages: reviewImages || []
@@ -480,7 +500,7 @@ router.get("/", async (req, res) => {
           // Continue with reviews but without images in case of error
         }
       }
-      
+
       return res.status(200).json({
         success: true,
         message: "Reviews fetched successfully",
@@ -509,20 +529,20 @@ router.get("/published", async (req, res) => {
     console.log("==============================================");
     console.log("💡 [GET /published] Route handler triggered at " + new Date().toISOString());
     console.log("==============================================");
-    
+
     const connection = await pool.getConnection();
     try {
       console.log("[GET /published] Fetching published reviews...");
-      
+
       // First get all published reviews
       const [reviews] = await connection.query(`
         SELECT * FROM reviews 
         WHERE consent_to_publish = 1 AND is_anonymous = 0
         ORDER BY created_at DESC
       `);
-      
+
       console.log(`[GET /published] Found ${reviews.length} published reviews`);
-      
+
       // If no reviews found, return empty array - don't return a 404 error
       if (reviews.length === 0) {
         console.log("[GET /published] No published reviews found");
@@ -532,21 +552,21 @@ router.get("/published", async (req, res) => {
           reviews: []
         });
       }
-      
+
       // Then fetch all images for these reviews
       let reviewsWithImages = [...reviews]; // Create a copy of reviews
-      
+
       try {
         // Extract all review IDs
         const reviewIds = reviews.map(review => review.id);
         console.log(`[GET /published] Fetching images for reviews with IDs: ${reviewIds.join(', ')}`);
-        
+
         // Check if review_images table exists
         const [tableCheck] = await connection.query(`
           SELECT COUNT(*) as count FROM information_schema.tables 
           WHERE table_schema = ? AND table_name = 'review_images'
         `, [process.env.MYSQL_DATABASE || 'local_connect_db']);
-        
+
         if (tableCheck[0].count === 0) {
           console.log("[GET /published] review_images table does not exist");
           // Return reviews without images if table doesn't exist
@@ -556,18 +576,18 @@ router.get("/published", async (req, res) => {
             reviews: reviewsWithImages
           });
         }
-        
+
         // Safe way to build the query: If no reviews, we don't do an image query
         if (reviewIds.length > 0) {
           // Use a different approach for the IN clause to handle multiple IDs correctly
           let query = 'SELECT * FROM review_images WHERE review_id IN (';
           const placeholders = reviewIds.map(() => '?').join(',');
           query += placeholders + ')';
-          
+
           try {
             const [allImages] = await connection.query(query, reviewIds);
             console.log(`[GET /published] Found ${allImages.length} images for published reviews`);
-            
+
             // Map images to their respective reviews
             reviewsWithImages = reviews.map(review => {
               const reviewImages = allImages.filter(img => img.review_id === review.id);
@@ -586,9 +606,9 @@ router.get("/published", async (req, res) => {
         console.error("[GET /published] Error in image processing:", imageError);
         // Continue with reviews but without images in case of error
       }
-      
+
       console.log("[GET /published] Successfully prepared response with", reviewsWithImages.length, "reviews");
-      
+
       // Always return in the same format with a reviews array
       return res.status(200).json({
         success: true,
@@ -630,7 +650,7 @@ router.get("/diagnosis", async (req, res) => {
       actions: [],
       errors: []
     };
-    
+
     // Try database initialization first
     try {
       console.log("[GET /diagnosis] 🔄 Attempting database initialization...");
@@ -644,14 +664,14 @@ router.get("/diagnosis", async (req, res) => {
         code: initError.code
       });
     }
-    
+
     // Check database connection
     try {
       console.log("[GET /diagnosis] 🔄 Testing database connection...");
       const connection = await pool.getConnection();
       diagnosisResults.databaseConnection = true;
       diagnosisResults.actions.push('Database connection successful');
-      
+
       // Get MySQL version
       try {
         const [versionResult] = await connection.query('SELECT VERSION() as version');
@@ -663,36 +683,36 @@ router.get("/diagnosis", async (req, res) => {
           message: versionError.message
         });
       }
-      
+
       // Check reviews table
       try {
         const [reviewTableCheck] = await connection.query(`
           SELECT COUNT(*) as count FROM information_schema.tables 
           WHERE table_schema = ? AND table_name = 'reviews'
         `, [process.env.MYSQL_DATABASE || 'local_connect_db']);
-        
+
         diagnosisResults.tables.reviews.exists = reviewTableCheck[0].count > 0;
-        
+
         if (diagnosisResults.tables.reviews.exists) {
           diagnosisResults.actions.push('Found reviews table');
           // Count total reviews
           const [reviewsCount] = await connection.query('SELECT COUNT(*) as count FROM reviews');
           diagnosisResults.tables.reviews.count = reviewsCount[0].count;
           diagnosisResults.actions.push(`Found ${reviewsCount[0].count} reviews`);
-          
+
           // Get sample review
           if (reviewsCount[0].count > 0) {
             const [sampleReview] = await connection.query('SELECT * FROM reviews LIMIT 1');
             diagnosisResults.tables.reviews.sample = sampleReview[0];
             diagnosisResults.actions.push('Retrieved sample review');
-            
+
             // Check consent and anonymous flags
             const [publishedReviewsCount] = await connection.query(
               'SELECT COUNT(*) as count FROM reviews WHERE consent_to_publish = 1 AND is_anonymous = 0'
             );
             diagnosisResults.publishedReviews.count = publishedReviewsCount[0].count;
             diagnosisResults.actions.push(`Found ${publishedReviewsCount[0].count} published reviews`);
-            
+
             if (publishedReviewsCount[0].count > 0) {
               const [samplePublishedReview] = await connection.query(
                 'SELECT * FROM reviews WHERE consent_to_publish = 1 AND is_anonymous = 0 LIMIT 1'
@@ -707,7 +727,7 @@ router.get("/diagnosis", async (req, res) => {
           }
         } else {
           diagnosisResults.actions.push('Reviews table does not exist (this is an issue)');
-          
+
           // Try to create the reviews table if it doesn't exist
           try {
             await connection.query(`
@@ -752,21 +772,21 @@ router.get("/diagnosis", async (req, res) => {
           code: reviewsTableError.code
         });
       }
-      
+
       // Check review_images table
       try {
         const [imagesTableCheck] = await connection.query(`
           SELECT COUNT(*) as count FROM information_schema.tables 
           WHERE table_schema = ? AND table_name = 'review_images'
         `, [process.env.MYSQL_DATABASE || 'local_connect_db']);
-        
+
         diagnosisResults.tables.review_images.exists = imagesTableCheck[0].count > 0;
-        
+
         if (diagnosisResults.tables.review_images.exists) {
           // Count total images
           const [imagesCount] = await connection.query('SELECT COUNT(*) as count FROM review_images');
           diagnosisResults.tables.review_images.count = imagesCount[0].count;
-          
+
           // Get sample image
           if (imagesCount[0].count > 0) {
             const [sampleImage] = await connection.query('SELECT * FROM review_images LIMIT 1');
@@ -780,7 +800,7 @@ router.get("/diagnosis", async (req, res) => {
           code: imagesTableError.code
         });
       }
-      
+
       return res.status(200).json({
         success: true,
         message: "API diagnosis completed",
@@ -812,19 +832,19 @@ router.get("/diagnosis", async (req, res) => {
 router.get("/:id", async (req, res, next) => {
   try {
     const reviewId = req.params.id;
-    
+
     // Important: Special case for if the ID is actually 'published' or 'diagnosis'
     // This handles route precedence issues
     if (reviewId === 'published') {
       console.log("[GET /:id] Received 'published' as ID, redirecting to published handler");
       return next();
     }
-    
+
     if (reviewId === 'diagnosis') {
       console.log("[GET /:id] Received 'diagnosis' as ID, redirecting to diagnosis handler");
       return next();
     }
-    
+
     // Check if ID is a valid integer
     if (isNaN(parseInt(reviewId))) {
       console.log(`[GET /:id] Invalid ID format: ${reviewId}`);
@@ -833,40 +853,40 @@ router.get("/:id", async (req, res, next) => {
         message: "Review not found - Invalid ID format"
       });
     }
-    
+
     const connection = await pool.getConnection();
-    
+
     try {
       // Get review details with better error logging
       console.log(`[GET /:id] Fetching review with ID: ${reviewId}`);
-      
+
       const [reviewRows] = await connection.query(
         "SELECT * FROM reviews WHERE id = ?",
         [reviewId]
       );
-      
+
       console.log(`[GET /:id] Found ${reviewRows.length} reviews with ID ${reviewId}`);
-      
+
       if (reviewRows.length === 0) {
         return res.status(404).json({
           success: false,
           message: "Review not found"
         });
       }
-      
+
       const review = reviewRows[0];
-      
+
       // Try-catch block for image fetching to prevent query failures
       let reviewImagesRows = [];
       let additionalImagesRows = [];
-      
+
       try {
         // Get review images
         [reviewImagesRows] = await connection.query(
           "SELECT * FROM review_images WHERE review_id = ? AND image_type = 'review'",
           [reviewId]
         );
-        
+
         // Get additional images (if any)
         [additionalImagesRows] = await connection.query(
           "SELECT * FROM review_images WHERE review_id = ? AND image_type = 'issue'",
@@ -876,14 +896,14 @@ router.get("/:id", async (req, res, next) => {
         console.error(`[GET /:id] Error fetching images for review ${reviewId}:`, imageError);
         // Continue without images if there's an error
       }
-      
+
       // Combine all data
       const reviewData = {
         ...review,
         reviewImages: reviewImagesRows || [],
         additionalImages: additionalImagesRows || []
       };
-      
+
       return res.status(200).json({
         success: true,
         message: "Review fetched successfully",

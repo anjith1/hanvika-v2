@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
-  
+
   if (!token) {
     console.log('No token provided');
     return res.status(401).json({ error: 'No token provided' });
@@ -26,10 +26,10 @@ function authenticateToken(req, res, next) {
 // GET /api/users/current
 router.get('/current', authenticateToken, async (req, res) => {
   try {
-    const { userConnection } = require('../db');
+    const { conn } = require('../db');
     const createUserModel = require('../models/User');
-    const UserModel = createUserModel(userConnection);
-    
+    const UserModel = createUserModel(conn);
+
     const user = await UserModel.findById(req.user.userId).select('-password');
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);

@@ -3,9 +3,10 @@ const router = express.Router();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-const { userConnection } = require("../db");
+const { conn } = require("../db");
 const createUserModel = require("../models/User");
-const User = createUserModel(userConnection);
+const User = createUserModel(conn);
+
 
 // Sign Up
 router.post("/signup", async (req, res) => {
@@ -41,12 +42,12 @@ router.post("/login", async (req, res) => {
   try {
     const { identifier, password } = req.body;
     console.log("Login attempt with identifier:", identifier);
-    
+
     // Check if identifier is empty
     if (!identifier) {
       return res.status(400).json({ error: "Username or email is required" });
     }
-    
+
     // Find user by username or email
     const user = await User.findOne({
       $or: [
@@ -54,17 +55,17 @@ router.post("/login", async (req, res) => {
         { email: identifier }
       ]
     });
-    
+
     if (!user) {
       console.log("User not found with identifier:", identifier);
       return res.status(401).json({ error: "Invalid credentials" });
     }
-    
+
     console.log("User found:", user.username);
-    
+
     // Compare password - try direct comparison first for imported data
     let isMatch = false;
-    
+
     // Try direct comparison (in case of imported data without hashing)
     if (password === user.password) {
       console.log("Direct password match");
@@ -78,16 +79,16 @@ router.post("/login", async (req, res) => {
         console.error("Bcrypt comparison failed:", err);
       }
     }
-    
+
     if (!isMatch) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
-    
+
     // Generate JWT
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
-    
+
     return res.status(200).json({
       message: "Login successful",
       token,

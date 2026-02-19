@@ -3,9 +3,10 @@ const router = express.Router();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-const { workerConnection } = require("../db");
+const { conn } = require("../db");
 const createWorkerModel = require("../models/Worker");
-const Worker = createWorkerModel(workerConnection);
+const Worker = createWorkerModel(conn);
+
 
 // Sign Up
 router.post("/signup", async (req, res) => {
@@ -41,7 +42,7 @@ router.post("/login", async (req, res) => {
   try {
     const { identifier, password } = req.body;
     console.log("Login attempt with identifier:", identifier);
-    
+
     if (!identifier) {
       return res.status(400).json({ error: "Username or email is required" });
     }

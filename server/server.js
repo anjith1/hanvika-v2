@@ -125,8 +125,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start the server on port 5003
-const PORT = 5003;
+// Start the server on PORT from environment (defaults to 5003)
+const PORT = process.env.PORT || 5003;
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT} - http://localhost:${PORT}`);
   console.log(`🛠️  API Endpoints available at http://localhost:${PORT}/api`);

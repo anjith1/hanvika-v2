@@ -1,6 +1,6 @@
-// models/WorkerForm.js
+// models/WorkerForm.js — uses the single shared DB connection from db.js
 const mongoose = require("mongoose");
-const { workerConnection } = require("../db");
+const { conn } = require("../db");
 
 const workerFormSchema = new mongoose.Schema({
   fullName: {
@@ -17,6 +17,7 @@ const workerFormSchema = new mongoose.Schema({
     electricalRepair: { type: Boolean, default: false },
     electronicRepair: { type: Boolean, default: false },
     plumber: { type: Boolean, default: false },
+    packersMovers: { type: Boolean, default: false },
   },
   address: {
     type: String,
@@ -51,12 +52,11 @@ const workerFormSchema = new mongoose.Schema({
     required: false,
     default: "",
   },
-  // Store the actual image data in MongoDB
   profilePhoto: {
     data: Buffer,
     contentType: String,
   },
 });
 
-// Updated to match the exact collection path shown in MongoDB Atlas
-module.exports = workerConnection.model("WorkerForm", workerFormSchema, "Form.Form.WorkerForm");
+// Collection name: "workerforms" (Mongoose default for this model)
+module.exports = conn.model("WorkerForm", workerFormSchema, "workerforms");
