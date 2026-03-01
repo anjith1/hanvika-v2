@@ -41,106 +41,129 @@ const roles = [
   },
 ];
 
+const NAV_ITEMS = [
+  { label: "Home", action: "home" },
+  { label: "Services", action: "services" },
+  { label: "Client Feedback", action: "feedback" },
+  { label: "Contact", action: "contact" },
+];
+
 const Select = () => {
   const navigate = useNavigate();
 
+  const handleNav = (action) => {
+    switch (action) {
+      case "home":
+        navigate("/");
+        break;
+      case "services":
+        // Go home and scroll to services section
+        navigate("/");
+        setTimeout(() => {
+          document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
+        }, 300);
+        break;
+      case "feedback":
+        navigate("/reviews");
+        break;
+      case "contact":
+        navigate("/contact");
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background:
-          "linear-gradient(135deg, #0a0a1a 0%, #0d1b2a 50%, #0a1628 100%)",
+    <div style={{
+      minHeight: "100vh",
+      background: "linear-gradient(135deg, #0a0a1a 0%, #0d1b2a 50%, #0a1628 100%)",
+      display: "flex",
+      flexDirection: "column",
+      fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
+    }}>
+
+      {/* ── Navbar ─────────────────────────────────────────────────────────── */}
+      <nav style={{
+        background: "linear-gradient(90deg, #1a237e 0%, #00897b 100%)",
+        padding: "0 40px",
+        height: 60,
         display: "flex",
-        flexDirection: "column",
-        fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-      }}
-    >
-      {/* Navbar */}
-      <nav
-        style={{
-          background: "linear-gradient(90deg, #1a237e 0%, #00897b 100%)",
-          padding: "0 40px",
-          height: 60,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
+        alignItems: "center",
+        justifyContent: "space-between",
+        position: "sticky", top: 0, zIndex: 100,
+      }}>
+        {/* Logo — clicks go home */}
         <span
+          onClick={() => navigate("/")}
           style={{
-            color: "#fff",
-            fontWeight: 800,
-            fontSize: 22,
-            letterSpacing: 1,
+            color: "#fff", fontWeight: 800, fontSize: 22,
+            letterSpacing: 1, cursor: "pointer",
+            userSelect: "none",
           }}
         >
           HanVika -AG
         </span>
+
+        {/* Nav links */}
         <div style={{ display: "flex", gap: 32 }}>
-          {["Home", "Services", "Client Feedback", "Login", "Contact"].map(
-            (item) => (
-              <span
-                key={item}
-                style={{
-                  color:
-                    item === "Login" ? "#fff" : "rgba(255,255,255,0.75)",
-                  fontWeight: item === "Login" ? 700 : 400,
-                  fontSize: 14,
-                  cursor: "pointer",
-                  borderBottom:
-                    item === "Login" ? "2px solid #fff" : "none",
-                  paddingBottom: 2,
-                }}
-              >
-                {item}
-              </span>
-            )
-          )}
+          {NAV_ITEMS.map((item) => (
+            <span
+              key={item.label}
+              onClick={() => handleNav(item.action)}
+              style={{
+                color: "rgba(255,255,255,0.82)",
+                fontWeight: 500,
+                fontSize: 14,
+                cursor: "pointer",
+                padding: "4px 0",
+                borderBottom: "2px solid transparent",
+                transition: "color 0.2s, border-color 0.2s",
+                userSelect: "none",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#fff";
+                e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.6)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "rgba(255,255,255,0.82)";
+                e.currentTarget.style.borderBottomColor = "transparent";
+              }}
+            >
+              {item.label}
+            </span>
+          ))}
         </div>
       </nav>
 
-      {/* Content */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "40px 20px",
-          gap: 32,
-        }}
-      >
-        <h1
-          style={{
-            color: "#fff",
-            fontSize: 42,
-            fontWeight: 800,
-            letterSpacing: 6,
-            margin: 0,
-            textAlign: "center",
-          }}
-        >
+      {/* ── Content ────────────────────────────────────────────────────────── */}
+      <div style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "40px 20px",
+        gap: 32,
+      }}>
+        <h1 style={{
+          color: "#fff",
+          fontSize: 42, fontWeight: 800,
+          letterSpacing: 6, margin: 0, textAlign: "center",
+        }}>
           CHOOSE YOUR ROLE
         </h1>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 16,
-            width: "100%",
-            maxWidth: 560,
-          }}
-        >
+        <div style={{
+          display: "flex", flexDirection: "column",
+          gap: 16, width: "100%", maxWidth: 560,
+        }}>
           {roles.map((role) => (
             <button
               key={role.id}
               onClick={() => navigate(role.route)}
               style={{
-                width: "100%",
-                padding: "0 28px",
-                height: 90,
+                width: "100%", padding: "0 28px", height: 90,
                 background: role.isAdmin
                   ? "linear-gradient(135deg, #1a1a3e 0%, #0d1f3c 100%)"
                   : "rgba(255,255,255,0.06)",
@@ -148,14 +171,11 @@ const Select = () => {
                   ? "1px solid rgba(249,115,22,0.4)"
                   : "1px solid rgba(255,255,255,0.08)",
                 borderRadius: 14,
-                display: "flex",
-                alignItems: "center",
-                gap: 20,
+                display: "flex", alignItems: "center", gap: 20,
                 cursor: "pointer",
                 transition: "all 0.25s",
                 backdropFilter: "blur(8px)",
-                position: "relative",
-                overflow: "hidden",
+                position: "relative", overflow: "hidden",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = role.isAdmin
@@ -163,8 +183,7 @@ const Select = () => {
                   : "rgba(255,255,255,0.11)";
                 e.currentTarget.style.transform = "translateY(-2px)";
                 e.currentTarget.style.borderColor = role.isAdmin
-                  ? "rgba(249,115,22,0.7)"
-                  : "rgba(255,255,255,0.2)";
+                  ? "rgba(249,115,22,0.7)" : "rgba(255,255,255,0.2)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = role.isAdmin
@@ -172,86 +191,49 @@ const Select = () => {
                   : "rgba(255,255,255,0.06)";
                 e.currentTarget.style.transform = "translateY(0)";
                 e.currentTarget.style.borderColor = role.isAdmin
-                  ? "rgba(249,115,22,0.4)"
-                  : "rgba(255,255,255,0.08)";
+                  ? "rgba(249,115,22,0.4)" : "rgba(255,255,255,0.08)";
               }}
             >
               {/* Admin badge */}
               {role.isAdmin && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 10,
-                    right: 14,
-                    background: "#f97316",
-                    color: "#fff",
-                    fontSize: 10,
-                    fontWeight: 800,
-                    padding: "2px 8px",
-                    borderRadius: 20,
-                    letterSpacing: 1,
-                  }}
-                >
+                <div style={{
+                  position: "absolute", top: 10, right: 14,
+                  background: "#f97316", color: "#fff",
+                  fontSize: 10, fontWeight: 800,
+                  padding: "2px 8px", borderRadius: 20, letterSpacing: 1,
+                }}>
                   RESTRICTED
                 </div>
               )}
 
-              {/* Icon box */}
-              <div
-                style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 12,
-                  flexShrink: 0,
-                  background: role.isAdmin
-                    ? "linear-gradient(135deg, #f97316, #dc2626)"
-                    : "linear-gradient(135deg, #1e40af, #3b82f6)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+              {/* Icon */}
+              <div style={{
+                width: 52, height: 52, borderRadius: 12, flexShrink: 0,
+                background: role.isAdmin
+                  ? "linear-gradient(135deg, #f97316, #dc2626)"
+                  : "linear-gradient(135deg, #1e40af, #3b82f6)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
                 {role.icon}
               </div>
 
               {/* Text */}
               <div style={{ flex: 1, textAlign: "left" }}>
-                <div
-                  style={{
-                    color: "#fff",
-                    fontWeight: 800,
-                    fontSize: 18,
-                    letterSpacing: 2,
-                  }}
-                >
+                <div style={{ color: "#fff", fontWeight: 800, fontSize: 18, letterSpacing: 2 }}>
                   {role.label}
                 </div>
-                <div
-                  style={{
-                    color: "rgba(255,255,255,0.45)",
-                    fontSize: 12,
-                    marginTop: 3,
-                  }}
-                >
+                <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, marginTop: 3 }}>
                   {role.description}
                 </div>
               </div>
 
               {/* Arrow */}
-              <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 22 }}>
-                ›
-              </span>
+              <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 22 }}>›</span>
             </button>
           ))}
         </div>
 
-        <p
-          style={{
-            color: "rgba(255,255,255,0.25)",
-            fontSize: 12,
-            marginTop: 8,
-          }}
-        >
+        <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 12, marginTop: 8 }}>
           Admin access is restricted to authorized Hanvika personnel only.
         </p>
       </div>

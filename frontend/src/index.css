@@ -1,0 +1,22 @@
+/* frontend/src/index.css */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background: #fff;
+}
+
+/* Remove Vite's default centering — it breaks full-width pages */
+#root {
+    max-width: unset;
+    margin: 0;
+    padding: 0;
+    text-align: unset;
+}
