@@ -17,55 +17,102 @@ import WorkerForm from "./components/WorkerForm";
 import Chatbox from "./components/Chatbox";
 import ReviewForm from "./components/ReviewForm";
 import WorkerReviews from "./components/WorkerReviews";
+import AdminDashboard from "./components/AdminDashboard";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import AdminLogin from "./components/AdminLogin";
 
 function App() {
   const location = useLocation();
-  const showSlider = location.pathname === "/" || location.pathname === "/workers";
+  const isAdminPath =
+    location.pathname.startsWith("/admin") ||
+    location.pathname === "/admin-login" ||
+    location.pathname === "/unauthorized";
 
   return (
     <AuthProvider>
       <div className="App">
-        <AppLayout>
-          <Navbar />
+        {isAdminPath ? (
+          /* ── Admin routes: full-screen, no Navbar / Footer ── */
           <Routes>
-            <Route path="/" element={<><WorkerSection /></>} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/workers" element={<Navigate to="/" />} />
-            <Route path="/select" element={<Select />} />
-            <Route path="/worker-login" element={<WorkerLogin />} />
-            <Route path="/worker-form" element={<WorkerForm />} />
+            {/* Admin Login */}
+            <Route path="/admin-login" element={<AdminLogin />} />
+
+            {/* Admin Dashboard (protected) */}
             <Route
-              path="/workers-dashboard"
+              path="/admin"
               element={
-                <ProtectedRoute>
-                  <WorkersDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/workers/:categoryId"
-              element={
-                <ProtectedRoute>
-                  <WorkerDetailsPage />
-                </ProtectedRoute>
+                <AdminProtectedRoute>
+                  <AdminDashboard />
+                </AdminProtectedRoute>
               }
             />
 
-            {/* Reviews */}
-            <Route path="/reviews" element={<WorkerReviews />} />
+            {/* Access denied */}
             <Route
-              path="/add-review"
+              path="/unauthorized"
               element={
-                <ProtectedRoute>
-                  <ReviewForm />
-                </ProtectedRoute>
+                <div style={{
+                  minHeight: "100vh",
+                  background: "#0a0a1a",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexDirection: "column",
+                  gap: 16,
+                  fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
+                }}>
+                  <span style={{ fontSize: 64 }}>🚫</span>
+                  <h2 style={{ color: "#fff", margin: 0 }}>Access Denied</h2>
+                  <p style={{ color: "rgba(255,255,255,0.5)" }}>You don't have permission to view this page.</p>
+                  <a href="/select" style={{ color: "#60a5fa" }}>← Back to Role Selection</a>
+                </div>
               }
             />
-            <Route path="/contact" element={<Contact />} />
           </Routes>
-          <Footer />
-          <Chatbox />
-        </AppLayout>
+        ) : (
+          /* ── Public / user routes: wrapped in AppLayout ── */
+          <AppLayout>
+            <Navbar />
+            <Routes>
+              <Route path="/" element={<><WorkerSection /></>} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/workers" element={<Navigate to="/" />} />
+              <Route path="/select" element={<Select />} />
+              <Route path="/worker-login" element={<WorkerLogin />} />
+              <Route path="/worker-form" element={<WorkerForm />} />
+              <Route
+                path="/workers-dashboard"
+                element={
+                  <ProtectedRoute>
+                    <WorkersDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/workers/:categoryId"
+                element={
+                  <ProtectedRoute>
+                    <WorkerDetailsPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Reviews */}
+              <Route path="/reviews" element={<WorkerReviews />} />
+              <Route
+                path="/add-review"
+                element={
+                  <ProtectedRoute>
+                    <ReviewForm />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/contact" element={<Contact />} />
+            </Routes>
+            <Footer />
+            <Chatbox />
+          </AppLayout>
+        )}
       </div>
     </AuthProvider>
   );

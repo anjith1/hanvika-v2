@@ -80,6 +80,8 @@ if (!fs.existsSync(uploadsDir)) {
 const authRoutes = require("./routes/auth");
 const workerAuthRoutes = require("./routes/workerAuth");
 const workerFormRoutes = require("./routes/WorkerForm");
+const adminAuthRoutes = require("./routes/adminAuth.routes");
+const adminWorkersRoutes = require("./routes/adminWorkers.routes");
 
 const reviewRoutes = require("./routes/reviews");
 const orderRoutes = require("./routes/orders");
@@ -87,6 +89,8 @@ const orderRoutes = require("./routes/orders");
 
 // Use the routes with prefixed paths
 app.use("/api/auth", authRoutes);
+app.use("/api/auth/admin", adminAuthRoutes);
+app.use("/api/admin/workers", adminWorkersRoutes);
 app.use("/api/worker-auth", workerAuthRoutes);
 app.use("/api/worker-form", workerFormRoutes);
 
