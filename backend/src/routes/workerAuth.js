@@ -13,7 +13,7 @@ const Worker = createWorkerModel(conn);
 // ── POST /api/worker-auth/signup ─────────────────────────────────────────────
 router.post("/signup", async (req, res) => {
   try {
-    const { username, phone, email, password, serviceType } = req.body;
+    const { username, phone, email, password, serviceType, workerTypes, services } = req.body;
 
     // Check duplicate
     const existingWorker = await Worker.findOne({
@@ -27,13 +27,24 @@ router.post("/signup", async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Convert old string or object mappings into the new array format if they exist
+    let finalServices = [];
+    if (services && Array.isArray(services)) {
+      finalServices = services;
+    } else if (serviceType) {
+      finalServices = [serviceType];
+    } else if (workerTypes) {
+      let parsed = typeof workerTypes === 'string' ? JSON.parse(workerTypes) : workerTypes;
+      finalServices = Object.keys(parsed).filter(k => parsed[k] === true);
+    }
+
     // Create worker — status defaults to "pending"
     const newWorker = new Worker({
       username,
       phone,
       email,
       password: hashedPassword,
-      serviceType: serviceType || "",
+      services: finalServices,
       status: "pending",  // ← always starts pending, admin must approve
     });
 
@@ -99,9 +110,13 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // Generate JWT
+    // Generate Normalized JWT
     const token = jwt.sign(
-      { workerId: worker._id },
+      {
+        id: worker._id,
+        role: "WORKER",
+        email: worker.email
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
@@ -113,7 +128,7 @@ router.post("/login", async (req, res) => {
         username: worker.username,
         email: worker.email,
         phone: worker.phone,
-        serviceType: worker.serviceType,
+        services: worker.services,
         status: worker.status,
       },
     });

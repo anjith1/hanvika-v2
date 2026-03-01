@@ -28,10 +28,18 @@ const workerSchema = new mongoose.Schema({
     enum: ["pending", "approved", "rejected"],
     default: "pending",   // every new worker starts as pending
   },
-  serviceType: {
-    type: String,
-    enum: ["Technical", "Non-Technical", "Housekeeping", ""],
-    default: "",
+  services: {
+    type: [String],
+    enum: [
+      "acRepair",
+      "mechanicRepair",
+      "electricalRepair",
+      "electronicRepair",
+      "plumber",
+      "packersMovers",
+      ""
+    ],
+    default: [],
   },
   rejectionReason: {
     type: String,
@@ -40,6 +48,11 @@ const workerSchema = new mongoose.Schema({
   approvedAt: {
     type: Date,
     default: null,
+  },
+  availability: {
+    type: String,
+    enum: ["available", "busy"],
+    default: "available"
   },
   // ────────────────────────────────────────────────────────────
 }, { timestamps: true }); // adds createdAt, updatedAt automatically

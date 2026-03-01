@@ -20,6 +20,8 @@ import WorkerReviews from "./components/WorkerReviews";
 import AdminDashboard from "./components/AdminDashboard";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import AdminLogin from "./components/AdminLogin";
+import CustomerDashboard from "./components/CustomerDashboard";
+import CreateRequest from "./components/CreateRequest";
 
 function App() {
   const location = useLocation();
@@ -93,6 +95,24 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <WorkerDetailsPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/customer/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <CustomerDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/create-request"
+                element={
+                  <ProtectedRoute>
+                    <CreateRequest />
                   </ProtectedRoute>
                 }
               />

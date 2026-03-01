@@ -9,6 +9,18 @@ const API = import.meta.env.VITE_API_URL;
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n) => "₹" + Number(n).toLocaleString("en-IN");
 
+const formatServiceType = (type) => {
+  const map = {
+    acRepair: "AC Repair",
+    mechanicRepair: "Mechanic Repair",
+    electricalRepair: "Electrical Repair",
+    electronicRepair: "Electronics Repair",
+    plumber: "Plumbing Services",
+    packersMovers: "Packers & Movers"
+  };
+  return map[type] || type;
+};
+
 function Badge({ status }) {
   const colors = {
     pending: { bg: "#f59e0b22", text: "#f59e0b" },
@@ -209,7 +221,11 @@ function Workers({ token, showToast }) {
                     <td style={{ padding: "13px 16px", fontWeight: 700, color: "#1a2340" }}>{w.username}</td>
                     <td style={{ padding: "13px 16px", color: "#374151" }}>{w.email}</td>
                     <td style={{ padding: "13px 16px", color: "#374151" }}>{w.phone}</td>
-                    <td style={{ padding: "13px 16px", color: "#374151" }}>{w.serviceType || "—"}</td>
+                    <td style={{ padding: "13px 16px", color: "#374151" }}>
+                      {w.services && w.services.length > 0
+                        ? w.services.map(s => formatServiceType(s)).join(", ")
+                        : "—"}
+                    </td>
                     <td style={{ padding: "13px 16px", color: "#6b7280", fontSize: 12 }}>
                       {new Date(w.createdAt).toLocaleDateString("en-IN")}
                     </td>
@@ -264,6 +280,164 @@ function Workers({ token, showToast }) {
               </tbody>
             </table>
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Dispatch Requests View ───────────────────────────────────────────────────
+function DispatchRequests({ token, showToast }) {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [assignModal, setAssignModal] = useState(null); // request object
+  const [availableWorkers, setAvailableWorkers] = useState([]);
+  const [selectedWorkerId, setSelectedWorkerId] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const headers = { Authorization: `Bearer ${token}` };
+
+  const fetchRequests = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API}/api/requests/admin`, { headers });
+      setRequests(res.data.data);
+    } catch (err) {
+      showToast("Failed to load requests.", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => { fetchRequests(); }, [fetchRequests]);
+
+  const openAssignModal = async (reqObj) => {
+    setAssignModal(reqObj);
+    setSelectedWorkerId("");
+    try {
+      // Fetch all approved workers to find available ones for this service
+      const res = await axios.get(`${API}/api/admin/workers?status=approved`, { headers });
+      const workers = res.data.workers.filter(w => {
+        const isAvailable = w.availability === "available";
+        // Strictly check if the requested serviceType is in the services array
+        const matchesService = w.services && w.services.includes(reqObj.serviceType);
+        return isAvailable && matchesService;
+      });
+      setAvailableWorkers(workers);
+    } catch {
+      showToast("Failed to load available workers.", "error");
+    }
+  };
+
+  const confirmAssignment = async () => {
+    if (!selectedWorkerId || !assignModal) return;
+    setActionLoading(true);
+    try {
+      await axios.patch(`${API}/api/requests/admin/${assignModal._id}/assign`, { workerId: selectedWorkerId }, { headers });
+      showToast("Worker assigned successfully!", "success");
+      setAssignModal(null);
+      fetchRequests();
+    } catch (err) {
+      showToast(err.response?.data?.error || "Failed to assign worker", "error");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Assign Modal */}
+      {assignModal && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: 16, padding: 32, width: 400,
+            boxShadow: "0 24px 60px rgba(0,0,0,0.3)",
+          }}>
+            <h3 style={{ margin: "0 0 8px", color: "#1a2340" }}>Assign Worker</h3>
+            <p style={{ color: "#6b7280", fontSize: 14, margin: "0 0 16px" }}>
+              Assign a {formatServiceType(assignModal.serviceType)} worker for <strong>{assignModal.customer?.username || "Customer"}</strong>.
+            </p>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Select Available Worker</label>
+              <select
+                value={selectedWorkerId}
+                onChange={e => setSelectedWorkerId(e.target.value)}
+                style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #e5e7eb" }}
+              >
+                <option value="">-- Choose a worker --</option>
+                {availableWorkers.map(w => (
+                  <option key={w._id} value={w._id}>{w.username} ({w.phone})</option>
+                ))}
+              </select>
+              {availableWorkers.length === 0 && <p style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>No available workers for this service type right now.</p>}
+            </div>
+
+            <div style={{ display: "flex", gap: 10, marginTop: 16, justifyContent: "flex-end" }}>
+              <button onClick={() => setAssignModal(null)} disabled={actionLoading} style={{
+                padding: "10px 20px", borderRadius: 8, border: "1px solid #e5e7eb",
+                background: "#f9fafb", cursor: "pointer", fontWeight: 600,
+              }}>Cancel</button>
+              <button onClick={confirmAssignment} disabled={!selectedWorkerId || actionLoading} style={{
+                padding: "10px 20px", borderRadius: 8, border: "none",
+                background: (!selectedWorkerId || actionLoading) ? "#9ca3af" : "#10b981", color: "#fff", cursor: (!selectedWorkerId || actionLoading) ? "not-allowed" : "pointer", fontWeight: 700,
+              }}>{actionLoading ? "Assigning..." : "Confirm Assign"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <h2 style={{ fontSize: 18, color: "#1a2340", margin: 0 }}>Service Requests Pipeline</h2>
+        <button onClick={fetchRequests} style={{
+          padding: "8px 16px", borderRadius: 20,
+          border: "1px solid #e5e7eb", background: "#fff", cursor: "pointer", fontSize: 13,
+        }}>🔄 Refresh</button>
+      </div>
+
+      <div style={{ background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 12px rgba(0,0,0,0.07)", overflowX: "auto" }}>
+        {loading ? (
+          <div style={{ textAlign: "center", padding: 40, color: "#9ca3af" }}>Loading requests...</div>
+        ) : requests.length === 0 ? (
+          <div style={{ textAlign: "center", padding: 40, color: "#9ca3af" }}>No active dispatch requests.</div>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+            <thead>
+              <tr style={{ background: "#f8fafc" }}>
+                <th style={{ padding: "12px", textAlign: "left", color: "#374151" }}>Customer</th>
+                <th style={{ padding: "12px", textAlign: "left", color: "#374151" }}>Service</th>
+                <th style={{ padding: "12px", textAlign: "left", color: "#374151" }}>Location</th>
+                <th style={{ padding: "12px", textAlign: "left", color: "#374151" }}>Status</th>
+                <th style={{ padding: "12px", textAlign: "left", color: "#374151" }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {requests.map((r, i) => (
+                <tr key={r._id} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
+                  <td style={{ padding: "12px" }}>{r.customer?.username}<br /><span style={{ fontSize: 11, color: "#6b7280" }}>{r.customer?.phone}</span></td>
+                  <td style={{ padding: "12px", fontWeight: "bold" }}>{formatServiceType(r.serviceType)}</td>
+                  <td style={{ padding: "12px" }}>{r.location}<br /><span style={{ fontSize: 11, color: "#6b7280" }}>Pref: {new Date(r.preferredDate).toLocaleDateString()}</span></td>
+                  <td style={{ padding: "12px" }}><Badge status={r.status} /></td>
+                  <td style={{ padding: "12px" }}>
+                    {r.status === "pending" ? (
+                      <button onClick={() => openAssignModal(r)} style={{
+                        background: "#0d7377", color: "#fff", border: "none",
+                        borderRadius: 6, padding: "6px 14px", fontWeight: 700,
+                        fontSize: 12, cursor: "pointer",
+                      }}>Assign Worker</button>
+                    ) : (
+                      <span style={{ fontSize: 13, color: "#6b7280" }}>
+                        Assigned: <strong>{r.assignedWorker?.username}</strong>
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>
@@ -340,6 +514,7 @@ export default function AdminDashboard() {
 
   const navItems = [
     { label: "Overview", icon: "⊞" },
+    { label: "Dispatch", icon: "🚀" },
     { label: "Workers", icon: "👷" },
     { label: "Settings", icon: "⚙️" },
   ];
@@ -434,6 +609,7 @@ export default function AdminDashboard() {
         {/* Body */}
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
           {activeTab === "Overview" && <Overview token={token} showToast={showToast} />}
+          {activeTab === "Dispatch" && <DispatchRequests token={token} showToast={showToast} />}
           {activeTab === "Workers" && <Workers token={token} showToast={showToast} />}
           {activeTab === "Settings" && (
             <div style={{ background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }}>

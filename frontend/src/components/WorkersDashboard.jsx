@@ -5,11 +5,14 @@ import './WorkersDashboard.css';
 const WorkersDashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [acceptedTasks, setAcceptedTasks] = useState([]);
+  const [dispatchJobs, setDispatchJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [dispatchLoading, setDispatchLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchTasks();
+    fetchDispatchJobs();
   }, []);
 
   const fetchTasks = async () => {
@@ -43,6 +46,37 @@ const WorkersDashboard = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDispatchJobs = async () => {
+    try {
+      setDispatchLoading(true);
+      const token = localStorage.getItem('workerToken') || localStorage.getItem('authToken');
+      if (!token) return;
+
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/requests/worker`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setDispatchJobs(response.data.data);
+    } catch (err) {
+      console.error("Failed to fetch dispatch jobs", err);
+    } finally {
+      setDispatchLoading(false);
+    }
+  };
+
+  const handleDispatchAction = async (jobId, action) => {
+    // action is either 'checkin' or 'checkout'
+    try {
+      const token = localStorage.getItem('workerToken') || localStorage.getItem('authToken');
+      await axios.patch(`${import.meta.env.VITE_API_URL}/api/requests/worker/${jobId}/${action}`, {}, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      // Refresh jobs list after action
+      fetchDispatchJobs();
+    } catch (err) {
+      alert(err.response?.data?.error || `Failed to ${action}. Please try again.`);
     }
   };
 
@@ -86,7 +120,7 @@ const WorkersDashboard = () => {
         <button className="refresh-btn" onClick={fetchTasks}>Refresh Tasks</button>
       </header>
       <div className="tasks-section">
-        <h2>Tasks ({tasks.length})</h2>
+        <h2>Direct Orders ({tasks.length})</h2>
         {error && (
           <div className="error-message">
             <p>{error}</p>
@@ -95,7 +129,7 @@ const WorkersDashboard = () => {
         )}
         {tasks.length === 0 ? (
           <div className="no-tasks">
-            <p>No pending tasks available.</p>
+            <p>No pending orders available.</p>
           </div>
         ) : (
           <div className="tasks-grid">
@@ -157,9 +191,64 @@ const WorkersDashboard = () => {
         )}
       </div>
 
+      {/* DISPATCH JOBS SECTION */}
+      <div className="tasks-section" style={{ marginTop: '2rem' }}>
+        <h2>Assigned Dispatch Jobs ({dispatchJobs.length})</h2>
+        {dispatchLoading ? (
+          <div className="no-tasks"><p>Loading jobs...</p></div>
+        ) : dispatchJobs.length === 0 ? (
+          <div className="no-tasks"><p>No dispatch jobs assigned at the moment.</p></div>
+        ) : (
+          <div className="tasks-grid">
+            {dispatchJobs.map((job) => (
+              <div key={job._id} className="task-card accepted">
+                <div className="task-header" style={{ background: '#0d7377', color: 'white' }}>
+                  <h3>Central Dispatch Job</h3>
+                  <span className={`service-category ${job.serviceType?.toLowerCase().replace(' ', '-')}`}>
+                    {job.serviceType}
+                  </span>
+                </div>
+                <div className="task-content">
+                  <div className="customer-info">
+                    <h4>Customer Details</h4>
+                    <div className="info-row"><span className="label">Name:</span><span className="value">{job.customer?.username}</span></div>
+                    <div className="info-row"><span className="label">Phone:</span><span className="value">{job.customer?.phone}</span></div>
+                  </div>
+                  <div className="service-info">
+                    <h4>Job Details</h4>
+                    <div className="info-row"><span className="label">Location:</span><span className="value location">{job.location}</span></div>
+                    <div className="info-row"><span className="label">Preferred Date:</span><span className="value">{formatDate(job.preferredDate)}</span></div>
+                    {job.description && (
+                      <div className="info-row"><span className="label">Description:</span><span className="value">{job.description}</span></div>
+                    )}
+                    <div className="info-row"><span className="label">Status:</span>
+                      <span className="value" style={{ fontWeight: 'bold', color: job.status === 'completed' ? '#10b981' : '#f59e0b' }}>
+                        {job.status.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="task-actions" style={{ padding: '15px' }}>
+                  {job.status === 'assigned' && (
+                    <button className="btn accept-btn" onClick={() => handleDispatchAction(job._id, 'checkin')} style={{ width: '100%', padding: '12px', fontSize: '1.1rem' }}>
+                      📍 Check In Arrival
+                    </button>
+                  )}
+                  {job.status === 'in-progress' && (
+                    <button className="btn" onClick={() => handleDispatchAction(job._id, 'checkout')} style={{ width: '100%', padding: '12px', fontSize: '1.1rem', background: '#3b82f6', color: 'white' }}>
+                      ✅ Check Out & Complete
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {acceptedTasks.length > 0 && (
-        <div className="tasks-section">
-          <h2>Accepted Tasks ({acceptedTasks.length})</h2>
+        <div className="tasks-section" style={{ marginTop: '2rem' }}>
+          <h2>Legacy Accepted Orders ({acceptedTasks.length})</h2>
           <div className="tasks-grid">
             {acceptedTasks.map((task) => (
               <div key={task._id} className="task-card accepted">

@@ -75,7 +75,7 @@ const Navbar = () => {
               }
             }}
           >
-            Services
+            Request Service
           </NavLink>
 
 

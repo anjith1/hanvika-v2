@@ -18,12 +18,12 @@ const WorkerSection = () => {
       <h2>Service Partner Availability</h2>
       <div className="worker-grid">
         {workerCategories.map((category) => (
-          <Link key={category.id} to={`/workers/${category.id}`} className="premium-worker-card">
+          <Link key={category.id} to={`/create-request?service=${category.id}`} className="premium-worker-card">
             <div className="icon-wrapper">{category.logo}</div>
             <h3 className="category-title">{category.name}</h3>
             <p className="category-desc">{category.description}</p>
             <div className="trusted-badge">⭐ 4.8 Trusted Service</div>
-            <button className="explore-btn">Explore Services →</button>
+            <button className="explore-btn">Request Service →</button>
           </Link>
         ))}
       </div>

@@ -8,6 +8,7 @@ const jwt = require("jsonwebtoken");
 const { conn } = require("../db");
 const createWorkerModel = require("../models/Worker");
 const Worker = createWorkerModel(conn);
+const WorkerForm = require("../models/WorkerForm");
 
 // ── Admin Auth Middleware (inline) ───────────────────────────────────────────
 function adminOnly(req, res, next) {
@@ -63,19 +64,55 @@ router.get("/stats", adminOnly, async (req, res) => {
 // ── PATCH /api/admin/workers/:id/approve ────────────────────────────────────
 router.patch("/:id/approve", adminOnly, async (req, res) => {
     try {
+        const workerToApprove = await Worker.findById(req.params.id);
+        if (!workerToApprove) return res.status(404).json({ message: "Worker not found." });
+
+        if (workerToApprove.status === "approved") {
+            return res.status(400).json({ message: "Worker is already approved." });
+        }
+
+        // Fetch corresponding WorkerForm by email
+        const workerForm = await WorkerForm.findOne({ email: workerToApprove.email });
+
+        if (!workerForm) {
+            return res.status(400).json({ message: "Worker profile (WorkerForm) not found. Cannot approve without services." });
+        }
+
+        // Extract services from workerTypes
+        const validServices = [
+            "acRepair",
+            "mechanicRepair",
+            "electricalRepair",
+            "electronicRepair",
+            "plumber",
+            "packersMovers"
+        ];
+
+        let extractedServices = [];
+        if (workerForm.workerTypes) {
+            for (const [key, isSelected] of Object.entries(workerForm.workerTypes)) {
+                if (isSelected === true && validServices.includes(key)) {
+                    extractedServices.push(key);
+                }
+            }
+        }
+
+        if (extractedServices.length === 0) {
+            return res.status(400).json({ message: "Worker has no valid services selected. Cannot approve." });
+        }
+
         const worker = await Worker.findByIdAndUpdate(
             req.params.id,
             {
                 status: "approved",
                 approvedAt: new Date(),
                 rejectionReason: "",
+                services: extractedServices
             },
             { new: true }
         ).select("-password");
 
-        if (!worker) return res.status(404).json({ message: "Worker not found." });
-
-        console.log(`✅ Worker approved: ${worker.username}`);
+        console.log(`✅ Worker approved: ${worker.username} with services: ${extractedServices.join(", ")}`);
         res.json({ message: `${worker.username} has been approved!`, worker });
     } catch (err) {
         console.error("Approve error:", err);

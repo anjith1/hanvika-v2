@@ -96,6 +96,7 @@ app.use("/api/worker-form", workerFormRoutes);
 
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/requests", require("./routes/serviceRequests"));
 
 
 // Health-check endpoint for quick server status
