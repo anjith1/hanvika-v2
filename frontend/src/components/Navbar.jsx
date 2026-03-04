@@ -1,137 +1,46 @@
-// src/components/Navbar.jsx
+// frontend/src/components/Navbar.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
+import './Navbar.css';
 
-
-const Navbar = () => {
+export default function Navbar() {
   const { isAuthenticated, logout } = useContext(AuthContext);
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const fn = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', fn);
+    return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const toggleMenu = () => {
-    setMenuOpen((prev) => !prev);
-  };
-
-  const closeMenu = () => {
-    setMenuOpen(false);
-  };
-
-  const handleLogout = () => {
-    logout();
-    closeMenu();
-    navigate('/');
-  };
+  const close = () => setMenuOpen(false);
+  const handleLogout = () => { logout(); close(); navigate('/'); };
 
   return (
-    <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
-      <div className="navbar-container">
+    <nav className={`nb ${scrolled ? 'nb--solid' : ''}`}>
+      <div className="nb-inner">
+        <NavLink to="/" className="nb-logo" onClick={close}>
+          <div className="nb-mark">H</div>
+          <span>HanVika</span>
+        </NavLink>
 
-        {/* Logo */}
-        <div className="navbar-logo">
-          <NavLink to="/" onClick={closeMenu}>
-            HanVika -AG
-          </NavLink>
+        <div className={`nb-menu ${menuOpen ? 'nb-menu--open' : ''}`}>
+          <NavLink to="/" end className={({ isActive }) => `nb-link${isActive ? ' nb-link--on' : ''}`} onClick={close}>Home</NavLink>
+          <NavLink to="/reviews" className={({ isActive }) => `nb-link${isActive ? ' nb-link--on' : ''}`} onClick={close}>Feedback</NavLink>
+          <NavLink to="/contact" className={({ isActive }) => `nb-link${isActive ? ' nb-link--on' : ''}`} onClick={close}>Contact</NavLink>
+          {isAuthenticated
+            ? <button className="nb-link nb-link--out" onClick={handleLogout}>Logout</button>
+            : <NavLink to="/select" className="nb-cta" onClick={close}>Login →</NavLink>
+          }
         </div>
 
-        {/* Menu items */}
-        <div className={`navbar-menu ${menuOpen ? 'active' : ''}`}>
-          <NavLink
-            to="/"
-            end
-            className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}
-            onClick={() => {
-              closeMenu();
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-          >
-            Home
-          </NavLink>
-
-          <NavLink
-            to="/"
-            className="nav-item no-underline"
-            onClick={(e) => {
-              e.preventDefault();
-              closeMenu();
-              const workersSection = document.getElementById('workers-availability');
-              if (workersSection) {
-                workersSection.scrollIntoView({ behavior: 'smooth' });
-              } else {
-                navigate('/');
-                setTimeout(() => {
-                  const section = document.getElementById('workers-availability');
-                  if (section) section.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
-              }
-            }}
-          >
-            Request Service
-          </NavLink>
-
-
-
-          {/* Reviews - Dropdown */}
-          <div className="nav-dropdown">
-            <NavLink
-              to="/reviews"
-              className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}
-              onClick={closeMenu}
-            >
-              Client Feedback
-            </NavLink>
-            <div className="dropdown-content">
-              <NavLink to="/reviews" onClick={closeMenu}>View Feedback</NavLink>
-              <NavLink to="/add-review" onClick={closeMenu}>Submit Feedback</NavLink>
-            </div>
-          </div>
-
-
-
-          {/* Authentication */}
-          {isAuthenticated ? (
-            <button className="nav-item logoff-btn" onClick={handleLogout}>
-              Logoff
-            </button>
-          ) : (
-            <NavLink
-              to="/select"
-              className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}
-              onClick={closeMenu}
-            >
-              Login
-            </NavLink>
-          )}
-
-          <NavLink
-            to="/contact"
-            className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}
-            onClick={closeMenu}
-          >
-            Contact
-          </NavLink>
-
-
-        </div>
-
-        {/* Mobile Toggle */}
-        <div className={`navbar-toggle ${menuOpen ? 'active' : ''}`} onClick={toggleMenu}>
-          <span className="bar"></span>
-          <span className="bar"></span>
-          <span className="bar"></span>
-        </div>
+        <button className={`nb-burger ${menuOpen ? 'nb-burger--x' : ''}`} onClick={() => setMenuOpen(p => !p)}>
+          <span /><span /><span />
+        </button>
       </div>
     </nav>
   );
-};
-
-export default Navbar;
+}

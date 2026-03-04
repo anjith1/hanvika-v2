@@ -1,55 +1,82 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useContext, useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../../AuthContext';
 import './Sidebar.css';
 
-const Sidebar = () => {
+const NAV = [
+    { to: '/customer/dashboard', icon: '◈', label: 'Dashboard' },
+    { to: '/', icon: '⬡', label: 'Services', end: true },
+    { to: '/create-request', icon: '✦', label: 'New Request' },
+    { to: '/reviews', icon: '◎', label: 'Feedback' },
+    { to: '/contact', icon: '◉', label: 'Contact' },
+];
+
+export default function Sidebar() {
+    const { isAuthenticated, currentUser, logout } = useContext(AuthContext);
+    const navigate = useNavigate();
+    const [collapsed, setCollapsed] = useState(false);
+
+    const handleLogout = () => { logout(); navigate('/'); };
+
+    const initial = currentUser?.username?.[0]?.toUpperCase() || 'G';
+    const name = currentUser?.username || 'Guest User';
+    const role = currentUser?.role || 'Visitor';
+
     return (
-        <div className="sidebar">
-            <div className="sidebar-brand">
-                <div className="sidebar-logo">SS</div>
-                <h2>ServiceSphere</h2>
+        <aside className={`sb ${collapsed ? 'sb--collapsed' : ''}`}>
+            {/* Top */}
+            <div className="sb-top">
+                <div className="sb-brand">
+                    <div className="sb-mark">H</div>
+                    {!collapsed && <span className="sb-title">Hanvika</span>}
+                </div>
+                <button className="sb-toggle" onClick={() => setCollapsed(p => !p)}>
+                    {collapsed ? '›' : '‹'}
+                </button>
             </div>
 
-            <div className="sidebar-profile">
-                <div className="profile-avatar">U</div>
-                <div className="profile-info">
-                    <h4>Guest User</h4>
-                    <span className="profile-role">Visitor</span>
+            {/* Profile */}
+            {!collapsed && (
+                <div className="sb-profile">
+                    <div className="sb-avatar">{initial}</div>
+                    <div className="sb-pinfo">
+                        <span className="sb-pname">{name}</span>
+                        <span className="sb-prole">{role}</span>
+                    </div>
+                    <div className="sb-status" />
                 </div>
-            </div>
+            )}
 
-            <nav className="sidebar-nav">
-                <NavLink to="/workers-dashboard" className={({ isActive }) => (isActive ? 'sidebar-link active' : 'sidebar-link')}>
-                    <span className="link-icon">📊</span>
-                    Control Center
-                </NavLink>
-                <NavLink to="/" className={({ isActive }) => (isActive ? 'sidebar-link active' : 'sidebar-link')} end>
-                    <span className="link-icon">🛠️</span>
-                    Service Categories
-                </NavLink>
-                <NavLink to="/customer/dashboard" className={({ isActive }) => (isActive ? 'sidebar-link active' : 'sidebar-link')}>
-                    <span className="link-icon">📋</span>
-                    My Requests
-                </NavLink>
-                <NavLink to="/reviews" className={({ isActive }) => (isActive ? 'sidebar-link active' : 'sidebar-link')}>
-                    <span className="link-icon">⭐</span>
-                    Client Feedback
-                </NavLink>
-                <NavLink to="/saved" className={({ isActive }) => (isActive ? 'sidebar-link active' : 'sidebar-link')}>
-                    <span className="link-icon">❤️</span>
-                    Saved Services
-                </NavLink>
-                <NavLink to="/settings" className={({ isActive }) => (isActive ? 'sidebar-link active' : 'sidebar-link')}>
-                    <span className="link-icon">⚙️</span>
-                    Settings
-                </NavLink>
-                <div className="sidebar-link logout-link">
-                    <span className="link-icon">🚪</span>
-                    Logout
-                </div>
+            {/* Nav */}
+            <nav className="sb-nav">
+                {NAV.map(({ to, icon, label, end }) => (
+                    <NavLink
+                        key={to}
+                        to={to}
+                        end={end}
+                        className={({ isActive }) => `sb-link${isActive ? ' sb-link--active' : ''}`}
+                    >
+                        <span className="sb-icon">{icon}</span>
+                        {!collapsed && <span className="sb-label">{label}</span>}
+                        {!collapsed && <span className="sb-pill" />}
+                    </NavLink>
+                ))}
             </nav>
-        </div>
-    );
-};
 
-export default Sidebar;
+            {/* Bottom */}
+            <div className="sb-bottom">
+                {isAuthenticated ? (
+                    <button className="sb-link sb-logout" onClick={handleLogout}>
+                        <span className="sb-icon">⏻</span>
+                        {!collapsed && <span className="sb-label">Logout</span>}
+                    </button>
+                ) : (
+                    <NavLink to="/select" className="sb-link">
+                        <span className="sb-icon">→</span>
+                        {!collapsed && <span className="sb-label">Sign In</span>}
+                    </NavLink>
+                )}
+            </div>
+        </aside>
+    );
+}

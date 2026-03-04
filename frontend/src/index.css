@@ -1,0 +1,21 @@
+/* frontend/src/index.css — clean reset, removes Vite defaults */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Remove Vite's default centering that breaks full-width layouts */
+#root {
+    max-width: unset !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: unset !important;
+    width: 100% !important;
+}
