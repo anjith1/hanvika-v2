@@ -33,6 +33,9 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
     localStorage.removeItem("authToken");
     localStorage.removeItem("currentUser");
+    // Also clear worker-specific keys so no stale token survives
+    localStorage.removeItem("workerToken");
+    localStorage.removeItem("workerUser");
   };
 
   return (

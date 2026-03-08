@@ -181,11 +181,14 @@ const WorkerLogin = () => {
     }
   };
 
+  // Only redirect if BOTH AuthContext state AND localStorage token exist.
+  // After logout, isAuthenticated may briefly be true (stale) while token is cleared.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !!localStorage.getItem('workerToken')) {
       navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate, from]);
+  }, []);
 
   return (
     <div className="login-container">

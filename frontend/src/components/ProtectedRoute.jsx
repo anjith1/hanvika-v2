@@ -7,7 +7,9 @@ const ProtectedRoute = ({ children }) => {
   const location = useLocation();
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} />;
+    // Worker routes should redirect to worker-login, not the customer login
+    const workerRedirect = location.pathname.startsWith('/workers');
+    return <Navigate to={workerRedirect ? "/worker-login" : "/login"} state={{ from: location }} replace />;
   }
 
   // Block USER from direct worker routes

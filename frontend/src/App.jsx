@@ -25,21 +25,23 @@ import CreateRequest from "./components/CreateRequest";
 
 function App() {
   const location = useLocation();
-  const isAdminPath =
+
+  // Standalone routes — NO Navbar, NO generic Sidebar, NO Footer
+  const isStandalone =
     location.pathname.startsWith("/admin") ||
     location.pathname === "/admin-login" ||
-    location.pathname === "/unauthorized";
+    location.pathname === "/unauthorized" ||
+    location.pathname === "/workers-dashboard" ||
+    location.pathname === "/worker-login";
+
+  console.log('[App] path:', location.pathname, '| isStandalone:', isStandalone);
 
   return (
     <AuthProvider>
       <div className="App">
-        {isAdminPath ? (
-          /* ── Admin routes: full-screen, no Navbar / Footer ── */
+        {isStandalone ? (
           <Routes>
-            {/* Admin Login */}
             <Route path="/admin-login" element={<AdminLogin />} />
-
-            {/* Admin Dashboard (protected) */}
             <Route
               path="/admin"
               element={
@@ -48,8 +50,15 @@ function App() {
                 </AdminProtectedRoute>
               }
             />
-
-            {/* Access denied */}
+            <Route
+              path="/workers-dashboard"
+              element={
+                <ProtectedRoute>
+                  <WorkersDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/worker-login" element={<WorkerLogin />} />
             <Route
               path="/unauthorized"
               element={
@@ -72,60 +81,31 @@ function App() {
             />
           </Routes>
         ) : (
-          /* ── Public / user routes: wrapped in AppLayout ── */
           <AppLayout>
             <Navbar />
             <Routes>
-              <Route path="/" element={<><WorkerSection /></>} />
+              <Route path="/" element={<WorkerSection />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/workers" element={<Navigate to="/" />} />
               <Route path="/select" element={<Select />} />
               <Route path="/worker-login" element={<WorkerLogin />} />
               <Route path="/worker-form" element={<WorkerForm />} />
               <Route
-                path="/workers-dashboard"
-                element={
-                  <ProtectedRoute>
-                    <WorkersDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
                 path="/workers/:categoryId"
-                element={
-                  <ProtectedRoute>
-                    <WorkerDetailsPage />
-                  </ProtectedRoute>
-                }
+                element={<ProtectedRoute><WorkerDetailsPage /></ProtectedRoute>}
               />
-
               <Route
                 path="/customer/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <CustomerDashboard />
-                  </ProtectedRoute>
-                }
+                element={<ProtectedRoute><CustomerDashboard /></ProtectedRoute>}
               />
-
               <Route
                 path="/create-request"
-                element={
-                  <ProtectedRoute>
-                    <CreateRequest />
-                  </ProtectedRoute>
-                }
+                element={<ProtectedRoute><CreateRequest /></ProtectedRoute>}
               />
-
-              {/* Reviews */}
               <Route path="/reviews" element={<WorkerReviews />} />
               <Route
                 path="/add-review"
-                element={
-                  <ProtectedRoute>
-                    <ReviewForm />
-                  </ProtectedRoute>
-                }
+                element={<ProtectedRoute><ReviewForm /></ProtectedRoute>}
               />
               <Route path="/contact" element={<Contact />} />
               <Route path="/orders" element={<Navigate to="/customer/dashboard" />} />
