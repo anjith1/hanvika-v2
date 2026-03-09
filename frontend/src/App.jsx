@@ -14,7 +14,6 @@ import WorkersDashboard from "./components/WorkersDashboard";
 import Contact from "./components/Contact";
 import { AuthProvider } from "./AuthContext";
 import WorkerForm from "./components/WorkerForm";
-import Chatbox from "./components/Chatbox";
 import ReviewForm from "./components/ReviewForm";
 import WorkerReviews from "./components/WorkerReviews";
 import AdminDashboard from "./components/AdminDashboard";
@@ -113,7 +112,7 @@ function App() {
               <Route path="/settings" element={<Navigate to="/" />} />
             </Routes>
             <Footer />
-            <Chatbox />
+
           </AppLayout>
         )}
       </div>

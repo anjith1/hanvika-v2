@@ -32,6 +32,10 @@ function Badge({ status }) {
     cancelled: { bg: "#ef444422", text: "#ef4444" },
     Active: { bg: "#10b98122", text: "#10b981" },
     Pending: { bg: "#f59e0b22", text: "#f59e0b" },
+    available: { bg: "#10b98122", text: "#10b981" },
+    busy: { bg: "#ef444422", text: "#ef4444" },
+    on_leave: { bg: "#f59e0b22", text: "#f59e0b" },
+    offline: { bg: "#6b728022", text: "#6b7280" },
   };
   const c = colors[status] || { bg: "#6b728022", text: "#6b7280" };
   return (
@@ -39,7 +43,7 @@ function Badge({ status }) {
       background: c.bg, color: c.text,
       borderRadius: 20, padding: "3px 12px",
       fontSize: 12, fontWeight: 700, textTransform: "capitalize",
-    }}>{status}</span>
+    }}>{status ? status.replace('_', ' ') : 'Unknown'}</span>
   );
 }
 
@@ -83,7 +87,11 @@ function Workers({ token, showToast }) {
   const fetchWorkers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/api/admin/workers?status=${filter}`, { headers });
+      let url = `${API}/api/admin/workers?status=${filter}`;
+      if (["available", "busy", "on_leave", "offline"].includes(filter)) {
+        url = `${API}/api/admin/workers?status=approved&availability=${filter}`;
+      }
+      const res = await axios.get(url, { headers });
       setWorkers(res.data.workers);
     } catch (err) {
       showToast("Failed to load workers.", "error");
@@ -126,7 +134,7 @@ function Workers({ token, showToast }) {
     }
   };
 
-  const filterTabs = ["pending", "approved", "rejected"];
+  const filterTabs = ["pending", "available", "busy", "on_leave", "offline", "rejected"];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -180,7 +188,7 @@ function Workers({ token, showToast }) {
             color: filter === tab ? "#fff" : "#374151",
             fontWeight: 700, fontSize: 13, cursor: "pointer", textTransform: "capitalize",
           }}>
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab.replace('_', ' ').charAt(0).toUpperCase() + tab.replace('_', ' ').slice(1)}
           </button>
         ))}
         <button onClick={fetchWorkers} style={{
@@ -207,7 +215,7 @@ function Workers({ token, showToast }) {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
               <thead>
                 <tr style={{ background: "#f8fafc" }}>
-                  {["Name", "Email", "Phone", "Service Type", "Registered", "Status", "Actions"].map(col => (
+                  {["Name", "Email", "Phone", "Service Type", "Registered", "Status", "Availability", "Actions"].map(col => (
                     <th key={col} style={{
                       padding: "12px 16px", textAlign: "left", color: "#374151",
                       fontWeight: 700, fontSize: 12, textTransform: "uppercase",
@@ -234,6 +242,7 @@ function Workers({ token, showToast }) {
                       {new Date(w.createdAt).toLocaleDateString("en-IN")}
                     </td>
                     <td style={{ padding: "13px 16px" }}><Badge status={w.status} /></td>
+                    <td style={{ padding: "13px 16px" }}><Badge status={w.availabilityStatus || 'offline'} /></td>
                     <td style={{ padding: "13px 16px" }}>
                       <div style={{ display: "flex", gap: 8 }}>
                         {w.status === "pending" && (
@@ -361,9 +370,9 @@ function DispatchRequests({ token, showToast }) {
     setAssignModal(reqObj);
     setSelectedWorkerId("");
     try {
-      const res = await axios.get(`${API}/api/admin/workers?status=approved`, { headers });
+      const res = await axios.get(`${API}/api/admin/workers?status=approved&availability=available`, { headers });
       const workers = res.data.workers.filter(w => {
-        return w.availability === "available" && w.services && w.services.includes(reqObj.serviceType);
+        return w.services && w.services.includes(reqObj.serviceType);
       });
       setAvailableWorkers(workers);
     } catch {
@@ -609,6 +618,151 @@ function Overview({ token, showToast }) {
   );
 }
 
+// ── Payslips View ─────────────────────────────────────────────────────────────
+function Payslips({ token, showToast }) {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [uploadModal, setUploadModal] = useState(null); // request object
+  const [selectedFile, setSelectedFile] = useState(null);
+
+  const headers = { Authorization: `Bearer ${token}` };
+
+  const fetchPayslips = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API}/api/payslips/admin`, { headers });
+      setRequests(res.data);
+    } catch (err) {
+      showToast("Failed to load payslip requests.", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => { fetchPayslips(); }, [fetchPayslips]);
+
+  const handleUpload = async () => {
+    if (!selectedFile || !uploadModal) return;
+    const formData = new FormData();
+    formData.append("payslipFile", selectedFile);
+
+    try {
+      await axios.post(`${API}/api/payslips/${uploadModal._id}/upload`, formData, {
+        headers: { ...headers, "Content-Type": "multipart/form-data" },
+      });
+      showToast(`✅ Payslip uploaded for ${uploadModal.workerName}!`, "success");
+      setUploadModal(null);
+      setSelectedFile(null);
+      fetchPayslips();
+    } catch (err) {
+      showToast("Failed to upload payslip.", "error");
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Upload Modal */}
+      {uploadModal && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: 16, padding: 32, width: 400,
+            boxShadow: "0 24px 60px rgba(0,0,0,0.3)",
+          }}>
+            <h3 style={{ margin: "0 0 8px", color: "#1a2340" }}>Upload Payslip</h3>
+            <p style={{ color: "#6b7280", fontSize: 14, margin: "0 0 16px" }}>
+              Uploading payslip for <strong>{uploadModal.workerName}</strong>
+            </p>
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={(e) => setSelectedFile(e.target.files[0])}
+              style={{ padding: "10px", width: "100%", marginBottom: "16px" }}
+            />
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button onClick={() => { setUploadModal(null); setSelectedFile(null); }} style={{
+                padding: "8px 16px", borderRadius: 8, border: "1px solid #e5e7eb",
+                background: "#f9fafb", cursor: "pointer", fontWeight: 600,
+              }}>Cancel</button>
+              <button onClick={handleUpload} disabled={!selectedFile} style={{
+                padding: "8px 16px", borderRadius: 8, border: "none",
+                background: selectedFile ? "#10b981" : "#9ca3af",
+                color: "#fff", cursor: selectedFile ? "pointer" : "not-allowed", fontWeight: 700,
+              }}>Upload</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div style={{ background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
+          <h2 style={{ margin: 0, fontSize: 18, color: "#1a2340" }}>Payslip Requests</h2>
+          <button onClick={fetchPayslips} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #e5e7eb", background: "#f9fafb", cursor: "pointer" }}>🔄 Refresh</button>
+        </div>
+
+        {loading ? (
+          <div style={{ textAlign: "center", padding: 40, color: "#9ca3af" }}>Loading requests...</div>
+        ) : requests.length === 0 ? (
+          <div style={{ textAlign: "center", padding: 40, color: "#9ca3af" }}>No payslip requests found.</div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+              <thead>
+                <tr style={{ background: "#f8fafc" }}>
+                  {["Worker", "Date", "Status", "Actions"].map(col => (
+                    <th key={col} style={{
+                      padding: "12px 16px", textAlign: "left", color: "#374151",
+                      fontWeight: 700, fontSize: 12, textTransform: "uppercase",
+                      borderBottom: "2px solid #e5e7eb",
+                    }}>{col}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {requests.map((r, i) => (
+                  <tr key={r._id} style={{ borderBottom: "1px solid #f3f4f6", background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
+                    <td style={{ padding: "13px 16px", fontWeight: 700, color: "#1a2340" }}>{r.workerName}</td>
+                    <td style={{ padding: "13px 16px", color: "#6b7280" }}>{new Date(r.createdAt).toLocaleDateString("en-IN")}</td>
+                    <td style={{ padding: "13px 16px" }}><Badge status={r.status === 'uploaded' ? 'completed' : r.status === 'expired' ? 'cancelled' : 'pending'} /></td>
+                    <td style={{ padding: "13px 16px" }}>
+                      {r.status === "pending" && (
+                        <button onClick={() => setUploadModal(r)} style={{
+                          background: "#0d7377", color: "#fff", border: "none",
+                          borderRadius: 8, padding: "6px 14px", fontWeight: 700,
+                          fontSize: 12, cursor: "pointer",
+                        }}>Upload PDF</button>
+                      )}
+                      {r.status === "uploaded" && (
+                        <button onClick={async () => {
+                          try {
+                            const dl = await axios.get(`${API}/api/payslips/download/${r._id}`, { headers, responseType: 'blob' });
+                            const url = window.URL.createObjectURL(dl.data);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `payslip_${r.workerName}_${r._id}.pdf`;
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                          } catch (err) { showToast("Failed to download PDF", "error"); }
+                        }} style={{
+                          display: "inline-block", background: "#f3f4f6", color: "#10b981", border: "1px solid #a7f3d0", textDecoration: "none",
+                          borderRadius: 8, padding: "6px 14px", fontWeight: 700, fontSize: 12, cursor: "pointer",
+                        }}>⬇️ Download</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("Overview");
@@ -642,6 +796,7 @@ export default function AdminDashboard() {
     { label: "Overview", icon: "⊞" },
     { label: "Dispatch", icon: "🚀" },
     { label: "Workers", icon: "👷" },
+    { label: "Payslips", icon: "📄" },
     { label: "Settings", icon: "⚙️" },
   ];
 
@@ -737,6 +892,7 @@ export default function AdminDashboard() {
           {activeTab === "Overview" && <Overview token={token} showToast={showToast} />}
           {activeTab === "Dispatch" && <DispatchRequests token={token} showToast={showToast} />}
           {activeTab === "Workers" && <Workers token={token} showToast={showToast} />}
+          {activeTab === "Payslips" && <Payslips token={token} showToast={showToast} />}
           {activeTab === "Settings" && (
             <div style={{ background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }}>
               <p style={{ color: "#6b7280" }}>Settings coming soon.</p>

@@ -63,11 +63,18 @@ export default function WorkersDashboard() {
   // useMemo so user object reference is stable — avoids prop churn to WorkerSidebar
   const user = useMemo(() => workerUser(), []);
 
-  // ── assigned requests ──────────────────────────────────────────────────────
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState(null);
   const [toast, setToast] = useState(null);
+
+  // ── payslip state ──────────────────────────────────────────────────────────
+  // Correcting context:
+  const [payslipsData, setPayslipsData] = useState([]);
+  const [loadingPayslips, setLoadingPayslips] = useState(false);
+
+  // ── availability state ─────────────────────────────────────────────────────
+  const [availability, setAvailability] = useState(user.availabilityStatus || 'offline');
 
   // ── sidebar + modal state ──────────────────────────────────────────────────
   const [modal, setModal] = useState(null);
@@ -83,7 +90,6 @@ export default function WorkersDashboard() {
     setToast({ msg, type });
   }, []);
 
-  // ── fetch assigned requests ────────────────────────────────────────────────
   const loadRequests = useCallback(async () => {
     setLoading(true);
     try {
@@ -102,6 +108,79 @@ export default function WorkersDashboard() {
       showToast(e.message, 'error');
     } finally {
       setLoading(false);
+    }
+  }, [showToast]);
+
+  // ── fetch payslips ─────────────────────────────────────────────────────────
+  const loadPayslips = useCallback(async () => {
+    setLoadingPayslips(true);
+    try {
+      const r = await authFetch('/api/payslips/worker');
+      const data = await r.json();
+      if (r.ok) {
+        setPayslipsData(Array.isArray(data) ? data : []);
+      } else {
+        throw new Error(data.error || 'Failed to load payslips');
+      }
+    } catch (e) {
+      showToast(e.message, 'error');
+    } finally {
+      setLoadingPayslips(false);
+    }
+  }, [showToast]);
+
+  // ── request payslip ────────────────────────────────────────────────────────
+  const handleRequestPayslip = useCallback(async () => {
+    try {
+      const r = await authFetch('/api/payslips/request', { method: 'POST' });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Request failed');
+      showToast('Payslip request submitted successfully ✅');
+      loadPayslips();
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }, [showToast, loadPayslips]);
+
+  // ── update availability ────────────────────────────────────────────────────
+  const handleStatusChange = useCallback(async (statusEndpoint) => {
+    try {
+      const r = await authFetch(`/api/workers/status/${statusEndpoint}`, { method: 'PATCH' });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Failed to update status');
+
+      const newStatus = data.data.availabilityStatus;
+      setAvailability(newStatus);
+      showToast(`Status updated to ${newStatus.replace('_', ' ').toUpperCase()}`, 'success');
+
+      // Update local storage
+      const updatedUser = { ...user, availabilityStatus: newStatus };
+      localStorage.setItem('workerUser', JSON.stringify(updatedUser));
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }, [showToast, user]);
+
+  // ── download payslip ───────────────────────────────────────────────────────
+  const handleDownloadPayslip = useCallback(async (id) => {
+    try {
+      const r = await authFetch(`/api/payslips/download/${id}`);
+      if (!r.ok) {
+        const data = await r.json();
+        throw new Error(data.error || 'Download failed');
+      }
+
+      const blob = await r.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `payslip_${id}.pdf`; // Note: in reality, determine extension from headers if needed
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      showToast(e.message, 'error');
     }
   }, [showToast]);
 
@@ -139,9 +218,17 @@ export default function WorkersDashboard() {
       if (!r.ok) throw new Error(data.message || data.error || 'Check-out failed');
       showToast('Checked out successfully 👋');
       loadRequests();
+      // If we checked out and are now available, update local state
+      // We could ideally fetch the exact status, but we can optimistically set to available 
+      // if we aren't already offline/on_leave
+      if (availability === 'busy') {
+        setAvailability('available');
+        const updatedUser = { ...user, availabilityStatus: 'available' };
+        localStorage.setItem('workerUser', JSON.stringify(updatedUser));
+      }
     } catch (e) { showToast(e.message, 'error'); }
     finally { setActionId(null); }
-  }, [showToast, loadRequests]);
+  }, [showToast, loadRequests, availability, user]);
 
   // ── getDirection ───────────────────────────────────────────────────────────
   const getDirection = useCallback((req) => {
@@ -176,7 +263,10 @@ export default function WorkersDashboard() {
   const handleNav = useCallback((key) => {
     setActiveSection(key);
     setModal(key === 'home' ? null : key);
-  }, []);
+    if (key === 'payslips') {
+      loadPayslips();
+    }
+  }, [loadPayslips]);
 
   // ── date helpers ───────────────────────────────────────────────────────────
   const today = new Date();
@@ -237,6 +327,44 @@ export default function WorkersDashboard() {
 
         {/* ── SCROLL CONTENT ────────────────────────────────────────────── */}
         <div className="wd-scroll">
+
+          {/* ── AVAILABILITY CONTROL PANEL  ───────── */}
+          <div className="wd-quick-tiles" style={{ marginBottom: 24 }}>
+            <div className="wd-quick-row">
+              <span className="wd-quick-label">My Availability</span>
+              <span style={{
+                padding: '4px 10px', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600,
+                background: availability === 'available' ? '#d1fae5' : availability === 'busy' ? '#fee2e2' : availability === 'on_leave' ? '#fef3c7' : '#f3f4f6',
+                color: availability === 'available' ? '#065f46' : availability === 'busy' ? '#991b1b' : availability === 'on_leave' ? '#92400e' : '#374151'
+              }}>
+                {availability === 'available' ? '🟢 Available' : availability === 'busy' ? '🔴 Busy' : availability === 'on_leave' ? '🟡 On Leave' : '⚫ Offline'}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+              <button
+                disabled={availability === 'available' || availability === 'on_leave'}
+                onClick={() => handleStatusChange('online')}
+                style={{ flex: 1, padding: 12, borderRadius: 8, border: 'none', background: availability === 'available' || availability === 'on_leave' ? '#e5e7eb' : '#10b981', color: availability === 'available' || availability === 'on_leave' ? '#9ca3af' : '#fff', fontWeight: 600, cursor: availability === 'available' || availability === 'on_leave' ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}
+              >
+                GO ONLINE
+              </button>
+              <button
+                disabled={availability === 'offline' || availability === 'busy'}
+                onClick={() => handleStatusChange('offline')}
+                style={{ flex: 1, padding: 12, borderRadius: 8, border: 'none', background: availability === 'offline' || availability === 'busy' ? '#e5e7eb' : '#6b7280', color: availability === 'offline' || availability === 'busy' ? '#9ca3af' : '#fff', fontWeight: 600, cursor: availability === 'offline' || availability === 'busy' ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}
+              >
+                GO OFFLINE
+              </button>
+              <button
+                disabled={availability === 'on_leave' || availability === 'busy'}
+                onClick={() => handleStatusChange('leave')}
+                style={{ flex: 1, padding: 12, borderRadius: 8, border: 'none', background: availability === 'on_leave' || availability === 'busy' ? '#e5e7eb' : '#f59e0b', color: availability === 'on_leave' || availability === 'busy' ? '#9ca3af' : '#fff', fontWeight: 600, cursor: availability === 'on_leave' || availability === 'busy' ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}
+              >
+                TAKE LEAVE
+              </button>
+            </div>
+          </div>
+
           <div className="wd-section-label">How my day looks like today!</div>
 
           {/* ── ASSIGNED WORK CARDS ─────────────────────────────────────── */}
@@ -322,10 +450,11 @@ export default function WorkersDashboard() {
                 { key: 'leave', icon: '🏖️', label: 'Leave', color: '#fff3e0', ic: '#e65100' },
                 { key: 'regularize', icon: '🔄', label: 'Regularization', color: '#fce4ec', ic: '#c62828' },
                 { key: 'missed', icon: '⚠️', label: 'Missed\nAttendance', color: '#efebe9', ic: '#4e342e' },
+                { key: 'payslips', icon: '📄', label: 'My Payslips', color: '#f3e5f5', ic: '#6a1b9a' },
               ].map(op => (
                 <button key={op.key} className="wd-op-btn"
                   style={{ '--op-bg': op.color, '--op-ic': op.ic }}
-                  onClick={() => { setModal(op.key); setActiveSection(op.key); }}>
+                  onClick={() => { setModal(op.key); setActiveSection(op.key); if (op.key === 'payslips') loadPayslips(); }}>
                   <span className="wd-op-icon">{op.icon}</span>
                   <span className="wd-op-label">{op.label}</span>
                 </button>
@@ -600,6 +729,43 @@ export default function WorkersDashboard() {
               showToast('Incident report filed 🚨 Supervisor alerted');
               setModal(null); setActiveSection('home');
             }}>File Incident Report</button>
+          </div>
+        </Modal>
+      )}
+
+      {modal === 'payslips' && (
+        <Modal title="My Payslips" icon="📄" onClose={() => { setModal(null); setActiveSection('home'); }}>
+          <div className="wd-info-box">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <p className="wd-info-sub" style={{ margin: 0 }}>Request and download your payslips</p>
+              <button className="wd-submit-btn" style={{ width: 'auto', padding: '8px 16px', margin: 0 }} onClick={handleRequestPayslip}>
+                + Request Payslip
+              </button>
+            </div>
+            {loadingPayslips ? (
+              <div className="wd-loading"><span className="wd-spin" />Loading…</div>
+            ) : payslipsData.length === 0 ? (
+              <div className="wd-empty-sm">No payslips found.</div>
+            ) : (
+              <div className="wd-instr-list">
+                {payslipsData.map(p => (
+                  <div key={p._id} className="wd-instr-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <strong>Date: </strong> {new Date(p.createdAt).toLocaleDateString('en-IN')}
+                      <br />
+                      <span className={`wd-badge wd-badge--${p.status === 'uploaded' ? 'completed' : p.status === 'expired' ? 'rejected' : 'pending'}`} style={{ marginTop: 4, display: 'inline-block' }}>
+                        {p.status}
+                      </span>
+                    </div>
+                    {p.status === 'uploaded' && (
+                      <button className="wd-btn wd-btn--dir" onClick={() => handleDownloadPayslip(p._id)}>
+                        ⬇️ Download
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </Modal>
       )}

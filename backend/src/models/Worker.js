@@ -54,6 +54,11 @@ const workerSchema = new mongoose.Schema({
     enum: ["available", "busy"],
     default: "available"
   },
+  availabilityStatus: {
+    type: String,
+    enum: ["available", "busy", "on_leave", "offline"],
+    default: "offline"
+  },
   // ────────────────────────────────────────────────────────────
 }, { timestamps: true }); // adds createdAt, updatedAt automatically
 

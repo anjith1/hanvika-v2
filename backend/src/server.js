@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
+const cron = require("node-cron");
 const app = express();
 
 // Combined CORS configuration:
@@ -93,10 +94,12 @@ app.use("/api/auth/admin", adminAuthRoutes);
 app.use("/api/admin/workers", adminWorkersRoutes);
 app.use("/api/worker-auth", workerAuthRoutes);
 app.use("/api/worker-form", workerFormRoutes);
+app.use("/api/workers/status", require("./routes/workerStatus.routes"));
 
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/requests", require("./routes/serviceRequests"));
+app.use("/api/payslips", require("./routes/payslipRequests"));
 
 
 // Health-check endpoint for quick server status
@@ -128,6 +131,34 @@ app.use((err, req, res, next) => {
     message: err.message || 'Internal Server Error',
     error: process.env.NODE_ENV === 'development' ? err : undefined
   });
+});
+
+// Scheduled Job: Auto Delete Payslips after 7 days
+cron.schedule("0 0 * * *", async () => {
+  console.log("Running payslip cleanup job...");
+  try {
+    const { conn } = require("./db");
+    const PayslipRequest = require("./models/PayslipRequest")(conn);
+    const expiredRequests = await PayslipRequest.find({
+      expiresAt: { $lt: new Date() },
+      status: { $ne: "expired" }
+    });
+
+    for (const req of expiredRequests) {
+      if (req.filePath) {
+        // req.filePath typically starts with /uploads/payslips/
+        const absolutePath = path.join(__dirname, "..", req.filePath);
+        if (fs.existsSync(absolutePath)) {
+          fs.unlinkSync(absolutePath);
+        }
+      }
+      req.status = "expired";
+      await req.save();
+    }
+    console.log(`Cleanup finished: ${expiredRequests.length} payslips expired/deleted.`);
+  } catch (e) {
+    console.error("Cron Cleanup Error:", e);
+  }
 });
 
 // Start the server on PORT from environment (defaults to 5003)

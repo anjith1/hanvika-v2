@@ -32,8 +32,10 @@ function adminOnly(req, res, next) {
 // Get all workers (filter by status)
 router.get("/", adminOnly, async (req, res) => {
     try {
-        const { status } = req.query; // ?status=pending | approved | rejected
-        const filter = status ? { status } : {};
+        const { status, availability } = req.query; // ?status=pending | ?availability=available
+        const filter = {};
+        if (status) filter.status = status;
+        if (availability) filter.availabilityStatus = availability;
         const workers = await Worker.find(filter)
             .select("-password")
             .sort({ createdAt: -1 });

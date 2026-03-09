@@ -113,8 +113,8 @@ router.patch("/admin/:id/assign", verifyToken, authorizeRoles("ADMIN"), async (r
             return res.status(400).json({ error: "Cannot assign: Worker is not approved." });
         }
 
-        if (worker.availability !== "available") {
-            return res.status(400).json({ error: "Cannot assign: Worker is currently busy." });
+        if (worker.availabilityStatus !== "available") {
+            return res.status(400).json({ error: "Cannot assign: Worker is not available." });
         }
 
         const request = await ServiceRequest.findById(id);
@@ -132,7 +132,7 @@ router.patch("/admin/:id/assign", verifyToken, authorizeRoles("ADMIN"), async (r
         await request.save();
 
         // Update Worker
-        worker.availability = "busy";
+        worker.availabilityStatus = "busy";
         await worker.save();
 
         return res.status(200).json({
@@ -203,8 +203,15 @@ router.patch("/worker/:id/checkout", verifyToken, authorizeRoles("WORKER"), asyn
 
         const worker = await Worker.findById(req.user.id);
         if (worker) {
-            worker.availability = "available";
-            await worker.save();
+            // Check if there are other active jobs
+            const activeJobs = await ServiceRequest.find({
+                assignedWorker: worker._id,
+                status: { $in: ["assigned", "checked_in", "in-progress"] }
+            });
+            if (activeJobs.length === 0) {
+                worker.availabilityStatus = "available";
+                await worker.save();
+            }
         }
 
         return res.status(200).json({
