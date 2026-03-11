@@ -81,6 +81,7 @@ function Workers({ token, showToast }) {
   const [actionId, setActionId] = useState(null);
   const [rejectModal, setRejectModal] = useState(null); // worker object
   const [rejectReason, setRejectReason] = useState("");
+  const [workerRatings, setWorkerRatings] = useState({});
 
   const headers = { Authorization: `Bearer ${token}` };
 
@@ -100,7 +101,23 @@ function Workers({ token, showToast }) {
     }
   }, [filter, token]);
 
-  useEffect(() => { fetchWorkers(); }, [fetchWorkers]);
+  useEffect(() => {
+    fetchWorkers();
+
+    // Fetch worker ratings summary once
+    axios.get(`${API}/api/reviews/workers/summary`, { headers })
+      .then(res => {
+        const map = {};
+        (res.data.workers || []).forEach(w => {
+          map[w._id] = {
+            avg: parseFloat(w.avgRating).toFixed(1),
+            total: w.totalReviews
+          };
+        });
+        setWorkerRatings(map);
+      })
+      .catch(err => console.error("Error fetching worker ratings:", err));
+  }, [fetchWorkers, token]); // Added token to dependency array
 
   const approve = async (worker) => {
     setActionId(worker._id);
@@ -215,7 +232,7 @@ function Workers({ token, showToast }) {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
               <thead>
                 <tr style={{ background: "#f8fafc" }}>
-                  {["Name", "Email", "Phone", "Service Type", "Registered", "Status", "Availability", "Actions"].map(col => (
+                  {["Name", "Email", "Phone", "Service Type", "Registered", "Status", "Availability", "Rating", "Actions"].map(col => (
                     <th key={col} style={{
                       padding: "12px 16px", textAlign: "left", color: "#374151",
                       fontWeight: 700, fontSize: 12, textTransform: "uppercase",
@@ -243,6 +260,17 @@ function Workers({ token, showToast }) {
                     </td>
                     <td style={{ padding: "13px 16px" }}><Badge status={w.status} /></td>
                     <td style={{ padding: "13px 16px" }}><Badge status={w.availabilityStatus || 'offline'} /></td>
+                    <td style={{ padding: "13px 16px" }}>
+                      {workerRatings[w._id] ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <span style={{ color: "#f97316", fontSize: 14 }}>★</span>
+                          <span style={{ fontWeight: 700, color: "#1a2533" }}>{workerRatings[w._id].avg}</span>
+                          <span style={{ color: "#9ca3af", fontSize: 11 }}>({workerRatings[w._id].total})</span>
+                        </div>
+                      ) : (
+                        <span style={{ color: "#d1d5db", fontSize: 12 }}>No reviews</span>
+                      )}
+                    </td>
                     <td style={{ padding: "13px 16px" }}>
                       <div style={{ display: "flex", gap: 8 }}>
                         {w.status === "pending" && (
@@ -333,6 +361,7 @@ function DispatchRequests({ token, showToast }) {
   const [selectedWorkerId, setSelectedWorkerId] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [completedDateFilter, setCompletedDateFilter] = useState("");
+  const [workerRatings, setWorkerRatings] = useState({}); // Added workerRatings state
 
   const headers = { Authorization: `Bearer ${token}` };
 
@@ -386,6 +415,14 @@ function DispatchRequests({ token, showToast }) {
         return w.services && w.services.includes(reqObj.serviceType);
       });
       setAvailableWorkers(workers);
+
+      // Fetch ratings to display in the dropdown
+      const ratingsRes = await axios.get(`${API}/api/reviews/workers/summary`, { headers });
+      const map = {};
+      (ratingsRes.data.workers || []).forEach(w => {
+        map[w._id] = { avg: parseFloat(w.avgRating).toFixed(1), total: w.totalReviews };
+      });
+      setWorkerRatings(map);
     } catch {
       showToast("Failed to load available workers.", "error");
     }
@@ -446,7 +483,16 @@ function DispatchRequests({ token, showToast }) {
               <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Select Available Worker</label>
               <select value={selectedWorkerId} onChange={e => setSelectedWorkerId(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #e5e7eb" }}>
                 <option value="">-- Choose a worker --</option>
-                {availableWorkers.map(w => (<option key={w._id} value={w._id}>{w.username} ({w.phone})</option>))}
+                {availableWorkers.map(w => {
+                  const ratingStr = workerRatings[w._id]
+                    ? ` — ★ ${workerRatings[w._id].avg} (${workerRatings[w._id].total} reviews)`
+                    : ' — No reviews yet';
+                  return (
+                    <option key={w._id} value={w._id}>
+                      {w.username} ({w.phone}){ratingStr}
+                    </option>
+                  );
+                })}
               </select>
               {availableWorkers.length === 0 && <p style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>No available workers for this service type right now.</p>}
             </div>

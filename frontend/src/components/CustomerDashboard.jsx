@@ -52,6 +52,14 @@ const CustomerDashboard = () => {
     const [error, setError] = useState(null);
     const [activeFilter, setActiveFilter] = useState('all');
 
+    // Rebuilt Reviews System
+    const [reviewedIds, setReviewedIds] = useState(new Set());
+    const [reviewModal, setReviewModal] = useState(null); // request object
+    const [rating, setRating] = useState(5);
+    const [comment, setComment] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+    const [reviewError, setReviewError] = useState("");
+
     const fetchRequests = async () => {
         try {
             setLoading(true);
@@ -70,8 +78,64 @@ const CustomerDashboard = () => {
     };
 
     useEffect(() => {
-        if (authToken) fetchRequests();
+        if (authToken) {
+            fetchRequests();
+            fetchReviewedJobs();
+        }
     }, [authToken]);
+
+    const fetchReviewedJobs = async () => {
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+            const response = await axios.get(`${apiUrl}/api/reviews/my`, {
+                headers: { Authorization: `Bearer ${authToken}` }
+            });
+            setReviewedIds(new Set(response.data.reviewedIds || []));
+        } catch (err) {
+            console.error('Error fetching reviewed jobs:', err);
+        }
+    };
+
+    const submitReview = async () => {
+        setSubmitting(true);
+        setReviewError("");
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+            const res = await fetch(`${apiUrl}/api/reviews`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${authToken}`
+                },
+                body: JSON.stringify({
+                    workerId: reviewModal.assignedWorker?._id || reviewModal.assignedWorker,
+                    workerName: reviewModal.assignedWorker?.username || "Worker",
+                    workerPhone: reviewModal.assignedWorker?.phone || "",
+                    requestId: reviewModal._id,
+                    serviceType: reviewModal.serviceType,
+                    rating,
+                    comment,
+                    customerName: user.name || user.username || "Customer",
+                    jobDate: reviewModal.checkOutTime,
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+
+            // Mark as reviewed
+            setReviewedIds(prev => new Set([...prev, reviewModal._id]));
+            setReviewModal(null);
+            setRating(5);
+            setComment("");
+        } catch (err) {
+            setReviewError(err.message || "Failed to submit review");
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     // Derived counts
     const safeReqs = Array.isArray(requests) ? requests : [];
@@ -244,7 +308,29 @@ const CustomerDashboard = () => {
                                             {(req.status === 'completed' || req.status === 'pending') && (
                                                 <div className="cd-card-actions">
                                                     {req.status === 'completed' && (
-                                                        <Link to="/create-request" className="cd-action cd-action--rebook">🔁 Rebook</Link>
+                                                        <>
+                                                            <Link to="/create-request" className="cd-action cd-action--rebook">🔁 Rebook</Link>
+                                                            {reviewedIds.has(req._id) ? (
+                                                                <span style={{ color: "#10b981", fontSize: 13, fontWeight: 600, marginLeft: 12 }}>
+                                                                    ✓ Reviewed
+                                                                </span>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => setReviewModal(req)}
+                                                                    style={{
+                                                                        background: "#f97316", color: "#fff",
+                                                                        border: "none", borderRadius: 8,
+                                                                        padding: "8px 16px", fontWeight: 700,
+                                                                        fontSize: 13, cursor: "pointer",
+                                                                        marginLeft: 12, transition: "background 0.2s"
+                                                                    }}
+                                                                    onMouseOver={e => e.currentTarget.style.background = "#ea580c"}
+                                                                    onMouseOut={e => e.currentTarget.style.background = "#f97316"}
+                                                                >
+                                                                    ⭐ Write Review
+                                                                </button>
+                                                            )}
+                                                        </>
                                                     )}
                                                     {req.status === 'pending' && (
                                                         <button className="cd-action cd-action--cancel"
@@ -262,6 +348,92 @@ const CustomerDashboard = () => {
                     </div>
                 )}
             </div>
+
+            {/* ── REVIEW MODAL ───────────────────────────── */}
+            {reviewModal && (
+                <div style={{
+                    position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: "rgba(0,0,0,0.5)", zIndex: 9999,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    padding: "1rem"
+                }}>
+                    <div style={{
+                        background: "#fff", width: "100%", maxWidth: "440px",
+                        borderRadius: "20px", padding: "2rem",
+                        boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+                    }}>
+                        <h2 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#1a2533", margin: "0 0 0.5rem 0" }}>Rate Your Experience</h2>
+                        <p style={{ color: "#64748b", margin: "0 0 1.5rem 0", fontSize: "0.95rem" }}>
+                            {serviceLabels[reviewModal.serviceType] || reviewModal.serviceType} — <strong>{reviewModal.assignedWorker?.username}</strong>
+                        </p>
+
+                        <div style={{ display: "flex", justifyContent: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
+                            {[1, 2, 3, 4, 5].map(star => (
+                                <span
+                                    key={star}
+                                    onClick={() => setRating(star)}
+                                    style={{
+                                        fontSize: 40, cursor: "pointer",
+                                        color: star <= rating ? "#f97316" : "#e2e8f0",
+                                        transition: "color 0.15s, transform 0.1s",
+                                        userSelect: "none"
+                                    }}
+                                    onMouseDown={e => e.currentTarget.style.transform = "scale(0.9)"}
+                                    onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+                                >★</span>
+                            ))}
+                        </div>
+
+                        <div style={{ marginBottom: "1.5rem" }}>
+                            <textarea
+                                value={comment}
+                                onChange={e => setComment(e.target.value)}
+                                placeholder="Share your experience with this worker (optional)..."
+                                rows={4}
+                                style={{
+                                    width: "100%", padding: "1rem", borderRadius: "12px",
+                                    border: "1px solid #e2e8f0", fontSize: "0.95rem",
+                                    fontFamily: "inherit", resize: "none", boxSizing: "border-box",
+                                    backgroundColor: "#f8fafc"
+                                }}
+                                onFocus={e => { e.target.style.borderColor = "#f97316"; e.target.style.outline = "none"; e.target.style.boxShadow = "0 0 0 3px rgba(249, 115, 22, 0.1)"; }}
+                                onBlur={e => { e.target.style.borderColor = "#e2e8f0"; e.target.style.boxShadow = "none"; }}
+                            />
+                        </div>
+
+                        {reviewError && (
+                            <div style={{ color: "#dc2626", background: "#fef2f2", padding: "0.75rem", borderRadius: "8px", marginBottom: "1rem", fontSize: "0.9rem" }}>
+                                {reviewError}
+                            </div>
+                        )}
+
+                        <div style={{ display: "flex", gap: "1rem" }}>
+                            <button
+                                onClick={() => setReviewModal(null)}
+                                style={{
+                                    flex: 1, padding: "0.875rem", background: "#f1f5f9",
+                                    color: "#475569", border: "none", borderRadius: "10px",
+                                    fontWeight: 600, fontSize: "1rem", cursor: "pointer"
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={submitReview}
+                                disabled={submitting}
+                                style={{
+                                    flex: 1, padding: "0.875rem", background: "#f97316",
+                                    color: "#fff", border: "none", borderRadius: "10px",
+                                    fontWeight: 600, fontSize: "1rem", cursor: submitting ? "not-allowed" : "pointer",
+                                    opacity: submitting ? 0.7 : 1
+                                }}
+                            >
+                                {submitting ? "Submitting..." : "Submit Review"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
