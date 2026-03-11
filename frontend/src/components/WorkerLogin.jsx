@@ -64,7 +64,7 @@ const WorkerLogin = () => {
 
       // Also use the general auth context
       login(token, user);
-      navigate(from, { replace: true });
+      navigate("/workers-dashboard", { replace: true });
     } catch (error) {
       setError(error.response?.data?.error || "Login failed");
     }
@@ -74,7 +74,7 @@ const WorkerLogin = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (isAuthenticated && !!localStorage.getItem('workerToken')) {
-      navigate(from, { replace: true });
+      navigate("/workers-dashboard", { replace: true });
     }
   }, []);
 

@@ -62,17 +62,15 @@ const Sidebar = () => {
                 <NavLink to="/customer/dashboard" className={({ isActive }) => `sb-link${isActive ? ' active' : ''}`}>
                     <span className="sb-icon">🏠</span> Dashboard Home
                 </NavLink>
-                <NavLink to="/" end className={({ isActive }) => `sb-link${isActive ? ' active' : ''}`}>
+                <div
+                    className="sb-link"
+                    onClick={() => navigate('/#services')}
+                    style={{ cursor: 'pointer' }}
+                >
                     <span className="sb-icon">🔧</span> Service Categories
-                </NavLink>
+                </div>
                 <NavLink to="/reviews" className={({ isActive }) => `sb-link${isActive ? ' active' : ''}`}>
                     <span className="sb-icon">⭐</span> Client Feedback
-                </NavLink>
-                <NavLink to="/saved" className={({ isActive }) => `sb-link${isActive ? ' active' : ''}`}>
-                    <span className="sb-icon">❤️</span> Saved Services
-                </NavLink>
-                <NavLink to="/settings" className={({ isActive }) => `sb-link${isActive ? ' active' : ''}`}>
-                    <span className="sb-icon">⚙️</span> Settings
                 </NavLink>
             </nav>
 

@@ -46,7 +46,15 @@ const CreateRequest = () => {
         { value: "electricalRepair", label: "Electrical Repair" },
         { value: "electronicRepair", label: "Electronics Repair" },
         { value: "plumber", label: "Plumbing Services" },
-        { value: "packersMovers", label: "Packers & Movers" }
+        { value: "packersMovers", label: "Packers & Movers" },
+        { value: "Security Guards", label: "Security Guards" },
+        { value: "Watchmen", label: "Watchmen" },
+        { value: "Housekeeping", label: "Housekeeping" },
+        { value: "Drivers", label: "Drivers" },
+        { value: "Skilled Labour", label: "Skilled Labour" },
+        { value: "Unskilled Labour", label: "Unskilled Labour" },
+        { value: "Office Staff", label: "Office Staff" },
+        { value: "Other Staff", label: "Other Staff" }
     ];
 
     // Get geolocation on mount
@@ -76,13 +84,12 @@ const CreateRequest = () => {
     // Pre-fill service type from query params
     useEffect(() => {
         const queryParams = new URLSearchParams(routeLocation.search);
-        const service = queryParams.get('service');
-        if (service && serviceOptions.some(opt => opt.value === service)) {
-            const matchedOption = serviceOptions.find(opt => opt.value === service);
+        const selectedService = queryParams.get('service');
+        if (selectedService) {
             setFormData(prev => ({
                 ...prev,
-                serviceType: matchedOption.value,
-                description: `I need help with ${matchedOption.label}.`
+                serviceType: selectedService,
+                description: `I need help with ${selectedService}.`
             }));
         }
     }, [routeLocation.search]);

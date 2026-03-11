@@ -66,10 +66,14 @@ const LoginPage = () => {
         identifier: loginData.identifier,
         password: loginData.password,
       });
-      console.log("Login response:", response.data);
       const { token, user } = response.data;
       login(token, user);
-      navigate(from, { replace: true });
+
+      if (user.role === "ADMIN") {
+        navigate("/admin", { replace: true });
+      } else {
+        navigate("/customer/dashboard", { replace: true });
+      }
     } catch (error) {
       console.error("Login error:", error.response?.data || error.message);
       setError(error.response?.data?.error || "Invalid credentials. Please check your username/email and password.");
@@ -78,9 +82,15 @@ const LoginPage = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(from, { replace: true });
+      // Basic fallback if they land here already authenticated
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (user.role === "ADMIN") {
+        navigate("/admin", { replace: true });
+      } else {
+        navigate("/customer/dashboard", { replace: true });
+      }
     }
-  }, [isAuthenticated, navigate, from]);
+  }, [isAuthenticated, navigate]);
 
   /* ── shared inline styles ──────────────────────────────────── */
   const S = {

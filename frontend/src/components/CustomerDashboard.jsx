@@ -84,6 +84,13 @@ const CustomerDashboard = () => {
         }
     }, [authToken]);
 
+    useEffect(() => {
+        if (window.location.hash === "#services") {
+            const el = document.getElementById("services");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+        }
+    }, []);
+
     const fetchReviewedJobs = async () => {
         try {
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
@@ -163,7 +170,7 @@ const CustomerDashboard = () => {
                 </div>
             </header>
 
-            <div className="cd-content">
+            <section className="cd-content" id="services">
 
                 {/* ── ERROR ───────────────────────────────── */}
                 {error && <div className="cd-error">{error}</div>}
@@ -347,7 +354,7 @@ const CustomerDashboard = () => {
                         })}
                     </div>
                 )}
-            </div>
+            </section>
 
             {/* ── REVIEW MODAL ───────────────────────────── */}
             {reviewModal && (
