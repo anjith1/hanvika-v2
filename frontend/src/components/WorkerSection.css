@@ -857,3 +857,255 @@ h6,
         width: 100%;
     }
 }
+
+@media (max-width: 768px) {
+
+  /* ── NAVBAR ── */
+  .navbar {
+    padding: 0 16px !important;
+    height: 56px !important;
+  }
+
+  .nav-links {
+    display: none !important;
+  }
+
+  .logo-text {
+    font-size: 16px !important;
+  }
+
+  .navbar .btn {
+    padding: 7px 14px !important;
+    font-size: 12px !important;
+  }
+
+  /* ── HERO SECTION ── */
+  .hero-inner {
+    padding: 70px 0 32px !important;
+  }
+
+  .hero-grid {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+    text-align: center !important;
+  }
+
+  .hero h1 {
+    font-size: 28px !important;
+    line-height: 1.2 !important;
+    margin-bottom: 14px !important;
+  }
+
+  .hero p {
+    font-size: 14px !important;
+    margin-bottom: 20px !important;
+    max-width: 100% !important;
+  }
+
+  .hero-badge {
+    font-size: 11px !important;
+    padding: 4px 12px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .hero-buttons {
+    flex-direction: column !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+  }
+
+  .hero-buttons .btn {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 13px 20px !important;
+    font-size: 14px !important;
+  }
+
+  .hero-image {
+    display: none !important;
+  }
+
+  /* Trust row */
+  .hero-buttons + div,
+  [class*="trust"] {
+    font-size: 11px !important;
+    text-align: center !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 8px !important;
+  }
+
+  /* ── STATS BAR ── */
+  .stats {
+    margin-top: -20px !important;
+    padding: 0 12px !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .stat-card {
+    padding: 14px 10px !important;
+    border-radius: 12px !important;
+  }
+
+  .stat-card .value {
+    font-size: 22px !important;
+  }
+
+  .stat-card .label {
+    font-size: 11px !important;
+    margin-top: 4px !important;
+  }
+
+  /* ── SECTIONS GENERAL ── */
+  section {
+    padding: 48px 0 !important;
+  }
+
+  .container {
+    padding: 0 14px !important;
+  }
+
+  .section-header {
+    margin-bottom: 24px !important;
+  }
+
+  .section-header h2 {
+    font-size: 24px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .section-header p {
+    font-size: 13px !important;
+  }
+
+  /* ── SERVICES GRID — 2 columns ── */
+  .services-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .service-card {
+    padding: 14px 12px !important;
+    border-radius: 12px !important;
+  }
+
+  .service-card h3 {
+    font-size: 13px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .service-card .count {
+    font-size: 11px !important;
+  }
+
+  .service-icon {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+    margin-bottom: 8px !important;
+  }
+
+  /* ── FEATURES GRID — 2 columns ── */
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .feature-card {
+    padding: 16px 14px !important;
+    border-radius: 12px !important;
+  }
+
+  .feature-card h3 {
+    font-size: 13px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .feature-card p {
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+  }
+
+  .feature-card svg {
+    width: 24px !important;
+    height: 24px !important;
+    margin-bottom: 10px !important;
+  }
+
+  /* ── CTA SECTION ── */
+  .cta-box {
+    padding: 36px 18px !important;
+    border-radius: 16px !important;
+  }
+
+  .cta-box h2 {
+    font-size: 22px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .cta-box p {
+    font-size: 13px !important;
+    margin-bottom: 20px !important;
+  }
+
+  .cta-buttons {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .cta-buttons .btn {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 13px !important;
+    font-size: 14px !important;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 24px 0 !important;
+  }
+
+  .footer-logo span {
+    font-size: 14px !important;
+  }
+
+  footer p {
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .hero h1 {
+    font-size: 26px !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .stat-card .value {
+    font-size: 20px !important;
+  }
+
+  .services-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .service-card {
+    padding: 12px 10px !important;
+  }
+
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+}

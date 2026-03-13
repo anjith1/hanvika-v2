@@ -1,5 +1,15 @@
 /* frontend/src/components/CustomerDashboard.css — HanVika Premium */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');
+/* ── Globals ─────────────────────────────────────────────────────────────── */
+body, html {
+    overflow-x: hidden;
+}
+
+.dashboard-container {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
 
 /* ── Variables ───────────────────────────────────────────────────────────── */
 .cd {
@@ -24,7 +34,47 @@
     color: var(--text-dark);
 }
 
+/* ── Layout Overlap Prevention ───────────────────────────────────────────── */
+.sidebar {
+    z-index: 1000 !important;
+}
+
+.dashboard-layout {
+    display: flex;
+    width: 100%;
+}
+
+.dashboard-main {
+    flex: 1;
+    overflow-x: hidden;
+}
+
 /* ── Header ──────────────────────────────────────────────────────────────── */
+.cd-mobile-header {
+    display: none;
+    background: var(--bg-card);
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.menu-toggle {
+    background: transparent;
+    border: none;
+    font-size: 26px;
+    color: var(--text-dark);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.menu-toggle:hover {
+    background: var(--border);
+}
+
 .cd-header {
     background: var(--bg-card);
     padding: 28px 32px 24px;
@@ -378,6 +428,7 @@
     width: 220px;
     min-height: 200px;
     overflow: hidden;
+    position: relative;
     border-left: none;
     border-right: 1px solid var(--border-card);
 }
@@ -387,6 +438,7 @@
     width: 100% !important;
     min-height: 200px;
     border-radius: 0;
+    z-index: 0 !important; /* Forces Leaflet marker layer underneath the sidebar */
 }
 
 /* ── Card details (right) ────────────────────────────────────────────────── */
@@ -603,6 +655,11 @@
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+    .cd-mobile-header {
+        display: flex;
+        align-items: center;
+    }
+
     .cd-header {
         padding: 20px 16px;
     }

@@ -158,6 +158,13 @@ const CustomerDashboard = () => {
     return (
         <div className="cd">
 
+            {/* ── MOBILE HEADER (Hamburger) ─────────────────────────── */}
+            <div className="cd-mobile-header d-md-none">
+                <button className="menu-toggle" onClick={() => window.dispatchEvent(new Event('openSidebar'))}>
+                    ☰
+                </button>
+            </div>
+
             {/* ── HEADER ─────────────────────────────────── */}
             <header className="cd-header">
                 <div className="cd-header-left">

@@ -154,10 +154,18 @@ const CreateRequest = () => {
     };
 
     return (
-        <div style={{ maxWidth: 700, margin: '2rem auto', padding: '0 1rem' }}>
-            <h2 style={{ fontSize: '1.6rem', fontWeight: 700, marginBottom: '1.5rem', color: '#1e293b' }}>
-                📍 Create Service Request
-            </h2>
+        <div className="cd">
+            {/* ── MOBILE HEADER (Hamburger) ─────────────────────────── */}
+            <div className="cd-mobile-header d-md-none">
+                <button className="menu-toggle" onClick={() => window.dispatchEvent(new Event('openSidebar'))}>
+                    ☰
+                </button>
+            </div>
+
+            <div style={{ maxWidth: 700, margin: '2rem auto', padding: '0 1rem' }}>
+                <h2 style={{ fontSize: '1.6rem', fontWeight: 700, marginBottom: '1.5rem', color: '#1e293b' }}>
+                    📍 Create Service Request
+                </h2>
 
             {error && (
                 <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626', padding: '12px 16px', borderRadius: 8, marginBottom: 16 }}>
@@ -199,7 +207,7 @@ const CreateRequest = () => {
                             <MapContainer
                                 center={coordinates}
                                 zoom={15}
-                                style={{ height: 250, width: '100%' }}
+                                style={{ height: 250, width: '100%', zIndex: 0 }}
                                 ref={mapRef}
                             >
                                 <TileLayer
@@ -284,6 +292,7 @@ const CreateRequest = () => {
                     </button>
                 </div>
             </form>
+            </div>
         </div>
     );
 };

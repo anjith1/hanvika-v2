@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../AuthContext';
 import './Sidebar.css';
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen = true, toggleSidebar }) => {
     const { currentUser, logout } = useContext(AuthContext);
     const navigate = useNavigate();
 
@@ -32,7 +32,7 @@ const Sidebar = () => {
     };
 
     return (
-        <div className="sidebar">
+        <div className={`sidebar ${!isOpen ? 'collapsed' : 'open'}`}>
 
             {/* ── brand ─────────────────────────────────────── */}
             <div className="sb-brand">
@@ -41,6 +41,11 @@ const Sidebar = () => {
                     <span className="sb-brand-name">HanVika</span>
                     <span className="sb-brand-sub">Customer Portal</span>
                 </div>
+                {toggleSidebar && (
+                    <button className="sb-collapse-btn" onClick={toggleSidebar}>
+                        ⇔
+                    </button>
+                )}
             </div>
 
             {/* ── profile card ──────────────────────────────── */}
@@ -59,25 +64,25 @@ const Sidebar = () => {
             <span className="sb-section-label">MAIN MENU</span>
 
             <nav className="sb-nav">
-                <NavLink to="/customer/dashboard" className={({ isActive }) => `sb-link${isActive ? ' active' : ''}`}>
-                    <span className="sb-icon">🏠</span> Dashboard Home
+                <NavLink to="/customer/dashboard" className={({ isActive }) => `sb-link${isActive ? ' active' : ''}`} onClick={() => { if (window.innerWidth <= 768) toggleSidebar?.(); }}>
+                    <span className="sb-icon">🏠</span> <span className="sb-link-text">Dashboard Home</span>
                 </NavLink>
                 <div
                     className="sb-link"
-                    onClick={() => navigate('/#services')}
+                    onClick={() => { navigate('/#services'); if (window.innerWidth <= 768) toggleSidebar?.(); }}
                     style={{ cursor: 'pointer' }}
                 >
-                    <span className="sb-icon">🔧</span> Service Categories
+                    <span className="sb-icon">🔧</span> <span className="sb-link-text">Service Categories</span>
                 </div>
-                <NavLink to="/reviews" className={({ isActive }) => `sb-link${isActive ? ' active' : ''}`}>
-                    <span className="sb-icon">⭐</span> Client Feedback
+                <NavLink to="/reviews" className={({ isActive }) => `sb-link${isActive ? ' active' : ''}`} onClick={() => { if (window.innerWidth <= 768) toggleSidebar?.(); }}>
+                    <span className="sb-icon">⭐</span> <span className="sb-link-text">Client Feedback</span>
                 </NavLink>
             </nav>
 
             {/* ── logout ──────────────────────────────────────── */}
             <div className="sb-footer">
                 <button className="sb-logout" onClick={handleLogout}>
-                    LOG OUT
+                    <span className="sb-logout-text">LOG OUT</span>
                 </button>
             </div>
         </div>
