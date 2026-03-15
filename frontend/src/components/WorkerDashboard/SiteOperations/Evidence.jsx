@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+const API = import.meta.env.VITE_API_URL;
 const getToken = () => localStorage.getItem('workerToken') || localStorage.getItem('authToken');
 
 export default function Evidence() {

@@ -28,7 +28,7 @@ export default function WorkerSignup() {
         }
         setLoading(true);
         try {
-            const API = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+            const API = import.meta.env.VITE_API_URL;
             const res = await fetch(`${API}/api/worker-auth/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

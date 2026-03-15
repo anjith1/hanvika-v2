@@ -35,7 +35,7 @@ const WorkerReviews = () => {
   const fetchReviews = async () => {
     try {
       setLoading(true);
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+      const apiUrl = import.meta.env.VITE_API_URL;
       const res = await fetch(`${apiUrl}/api/reviews`);
       const data = await res.json();
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+const API = import.meta.env.VITE_API_URL;
 const getToken = () => localStorage.getItem('workerToken') || localStorage.getItem('authToken');
 
 const PRIORITY_COLOR = { low: '#22c55e', medium: '#f59e0b', high: '#ef4444' };

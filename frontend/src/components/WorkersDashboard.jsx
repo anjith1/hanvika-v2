@@ -10,7 +10,7 @@ import { AuthContext } from '../AuthContext';
 import WorkerSidebar from './WorkerSidebar';
 import './WorkersDashboard.css';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+const API = import.meta.env.VITE_API_URL;
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const getToken = () => localStorage.getItem('workerToken');

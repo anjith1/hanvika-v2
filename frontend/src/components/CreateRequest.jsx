@@ -131,7 +131,7 @@ const CreateRequest = () => {
                     Authorization: `Bearer ${authToken}`
                 }
             };
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+            const apiUrl = import.meta.env.VITE_API_URL;
             const payload = {
                 serviceType: formData.serviceType,
                 location: {

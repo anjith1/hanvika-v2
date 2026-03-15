@@ -6,34 +6,26 @@ const fs = require("fs");
 const cron = require("node-cron");
 const app = express();
 
-// Combined CORS configuration:
-// - Uses a function to dynamically allow origins:
-//   - Always allows requests with no origin (mobile, curl, etc.).
-//   - Allows any localhost origin.
-//   - Allows 'https://your-production-domain.com' and 'http://localhost:5173'.
-// - Also explicitly limits the HTTP methods.
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (e.g., mobile apps, curl requests)
-    if (!origin) return callback(null, true);
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:4173",
+  "https://hanvika-frontend.onrender.com"
+];
 
-    // Allow all localhost origins regardless of port
-    if (origin.startsWith('http://localhost:')) {
-      return callback(null, true);
-    }
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
 
-    // Allowed domains
-    const allowedDomains = ['https://your-production-domain.com', 'http://localhost:5173'];
-    if (allowedDomains.indexOf(origin) !== -1) {
-      return callback(null, true);
-    }
-
-    // Not allowed by CORS
-    callback(new Error('Not allowed by CORS'));
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  credentials: true
-}));
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true
+  })
+);
 
 // Parse JSON for non-file routes (Multer handles multipart/form-data)
 app.use(express.json({ limit: '10mb' }));
@@ -70,11 +62,12 @@ app.get('/api/image/:filename', (req, res) => {
 });
 
 // Create uploads directory if it does not exist
-const uploadsDir = path.join(__dirname, "uploads");
-const reviewsDir = path.join(uploadsDir, "reviews");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-  console.log('Created uploads directory');
+if (!fs.existsSync("uploads")) {
+  fs.mkdirSync("uploads");
+}
+
+if (!fs.existsSync("uploads/payslips")) {
+  fs.mkdirSync("uploads/payslips");
 }
 
 // Import route modules

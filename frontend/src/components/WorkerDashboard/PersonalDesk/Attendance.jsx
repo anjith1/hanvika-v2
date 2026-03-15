@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+const API = import.meta.env.VITE_API_URL;
 const getToken = () => localStorage.getItem('workerToken') || localStorage.getItem('authToken');
 
 const STATUS_COLOR = { completed: '#22c55e', 'in-progress': '#3b82f6', assigned: '#f59e0b', pending: '#64748b' };

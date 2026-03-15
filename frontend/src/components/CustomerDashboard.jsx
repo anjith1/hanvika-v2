@@ -63,7 +63,7 @@ const CustomerDashboard = () => {
     const fetchRequests = async () => {
         try {
             setLoading(true);
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+            const apiUrl = import.meta.env.VITE_API_URL;
             const response = await axios.get(`${apiUrl}/api/requests/my`, {
                 headers: { Authorization: `Bearer ${authToken}` }
             });
@@ -93,7 +93,7 @@ const CustomerDashboard = () => {
 
     const fetchReviewedJobs = async () => {
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+            const apiUrl = import.meta.env.VITE_API_URL;
             const response = await axios.get(`${apiUrl}/api/reviews/my`, {
                 headers: { Authorization: `Bearer ${authToken}` }
             });
@@ -107,7 +107,7 @@ const CustomerDashboard = () => {
         setSubmitting(true);
         setReviewError("");
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+            const apiUrl = import.meta.env.VITE_API_URL;
             const user = JSON.parse(localStorage.getItem("user") || "{}");
 
             const res = await fetch(`${apiUrl}/api/reviews`, {
