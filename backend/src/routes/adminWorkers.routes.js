@@ -1,5 +1,5 @@
 // backend/src/routes/adminWorkers.routes.js
-// NEW FILE: Admin API to list, approve, reject workers
+// UPDATED: Uses SERVICES constant and reads services[] array from WorkerForm
 
 const express = require("express");
 const router = express.Router();
@@ -9,6 +9,7 @@ const { conn } = require("../db");
 const createWorkerModel = require("../models/Worker");
 const Worker = createWorkerModel(conn);
 const WorkerForm = require("../models/WorkerForm");
+const SERVICES = require("../constants/services");
 
 // ── Admin Auth Middleware (inline) ───────────────────────────────────────────
 function adminOnly(req, res, next) {
@@ -80,23 +81,10 @@ router.patch("/:id/approve", adminOnly, async (req, res) => {
             return res.status(400).json({ message: "Worker profile (WorkerForm) not found. Cannot approve without services." });
         }
 
-        // Extract services from workerTypes
-        const validServices = [
-            "acRepair",
-            "mechanicRepair",
-            "electricalRepair",
-            "electronicRepair",
-            "plumber",
-            "packersMovers"
-        ];
-
+        // Extract services from the services array (new format)
         let extractedServices = [];
-        if (workerForm.workerTypes) {
-            for (const [key, isSelected] of Object.entries(workerForm.workerTypes)) {
-                if (isSelected === true && validServices.includes(key)) {
-                    extractedServices.push(key);
-                }
-            }
+        if (workerForm.services && Array.isArray(workerForm.services)) {
+            extractedServices = workerForm.services.filter(s => SERVICES.includes(s));
         }
 
         if (extractedServices.length === 0) {

@@ -1,8 +1,10 @@
 // routes/WorkerForm.js
+// UPDATED: Uses services[] array instead of workerTypes{} object
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const WorkerForm = require("../models/WorkerForm");
+const SERVICES = require("../constants/services");
 
 // Use memoryStorage so we can store the image directly in MongoDB as buffer
 const storage = multer.memoryStorage();
@@ -16,7 +18,7 @@ router.post("/", upload.single("profilePhoto"), async (req, res) => {
     const {
       fullName,
       phoneNumber,
-      workerTypes,
+      services,
       address,
       city,
       state,
@@ -33,11 +35,15 @@ router.post("/", upload.single("profilePhoto"), async (req, res) => {
     console.log("==== WORKER FORM SUBMISSION ====");
     console.log("Full request body:", JSON.stringify(req.body, null, 2));
 
-
-    // Parse workerTypes from string to object
-    let parsedWorkerTypes = {};
-    if (workerTypes) {
-      parsedWorkerTypes = JSON.parse(workerTypes);
+    // Parse services from JSON string to array
+    let parsedServices = [];
+    if (services) {
+      parsedServices = JSON.parse(services);
+      // Validate each service against approved list
+      const invalid = parsedServices.filter(s => !SERVICES.includes(s));
+      if (invalid.length > 0) {
+        return res.status(400).json({ error: `Invalid services: ${invalid.join(", ")}` });
+      }
     }
 
     // Validations
@@ -54,7 +60,7 @@ router.post("/", upload.single("profilePhoto"), async (req, res) => {
     const newWorkerData = {
       fullName,
       phoneNumber,
-      workerTypes: parsedWorkerTypes,
+      services: parsedServices,
       address,
       city,
       state,
@@ -63,7 +69,7 @@ router.post("/", upload.single("profilePhoto"), async (req, res) => {
       age,
       gender,
       aadharNumber,
-      panNumber,
+      panNumber: panNumber || "",
       // Super explicit handling of costPerHour
       costPerHour: costPerHour === undefined || costPerHour === null ? "" : String(costPerHour),
       profilePhoto: {
@@ -74,6 +80,7 @@ router.post("/", upload.single("profilePhoto"), async (req, res) => {
 
     console.log("Worker data prepared for saving:", {
       fullName: newWorkerData.fullName,
+      services: newWorkerData.services,
       costPerHour: newWorkerData.costPerHour,
       costPerHourType: typeof newWorkerData.costPerHour
     });
@@ -92,6 +99,7 @@ router.post("/", upload.single("profilePhoto"), async (req, res) => {
     console.log("After save - Worker saved with data:", {
       id: savedWorker._id,
       fullName: savedWorker.fullName,
+      services: savedWorker.services,
       costPerHour: savedWorker.costPerHour,
       allFields: Object.keys(savedWorker._doc)
     });
@@ -104,23 +112,18 @@ router.post("/", upload.single("profilePhoto"), async (req, res) => {
 });
 
 // GET /api/worker-form/by-type/:type
-// Fetch workers by their service type (acRepair, mechanicRepair, etc)
+// Fetch workers by their service type
 router.get("/by-type/:type", async (req, res) => {
   try {
     const serviceType = req.params.type;
 
-    // Validate service type
-    const validTypes = ['acRepair', 'mechanicRepair', 'electricalRepair', 'electronicRepair', 'plumber', 'packersMovers'];
-    if (!validTypes.includes(serviceType)) {
+    // Validate service type against approved list
+    if (!SERVICES.includes(serviceType)) {
       return res.status(400).json({ error: "Invalid service type" });
     }
 
-    // Create the query to find workers who offer this service
-    const query = {};
-    query[`workerTypes.${serviceType}`] = true;
-
-    // Find workers matching the criteria
-    const workers = await WorkerForm.find(query);
+    // Find workers who offer this service (services is now an array of strings)
+    const workers = await WorkerForm.find({ services: serviceType });
 
     res.status(200).json(workers);
   } catch (error) {

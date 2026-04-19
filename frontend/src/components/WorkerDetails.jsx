@@ -44,16 +44,9 @@ const WorkerDetails = ({ workers }) => {
     }
   };
 
-  const getWorkerRole = (workerTypes) => {
-    if (!workerTypes) return 'Service Provider';
-    const roles = [];
-    if (workerTypes.acRepair) roles.push('AC Repair Technician');
-    if (workerTypes.mechanicRepair) roles.push('Mechanic');
-    if (workerTypes.electricalRepair) roles.push('Electrician');
-    if (workerTypes.electronicRepair) roles.push('Electronics Repair Technician');
-    if (workerTypes.plumber) roles.push('Plumber');
-    if (workerTypes.packersMovers) roles.push('Packers & Movers');
-    return roles.length > 0 ? roles.join(', ') : 'Service Provider';
+  const getWorkerRole = (services) => {
+    if (!services || !Array.isArray(services) || services.length === 0) return 'Service Provider';
+    return services.join(', ');
   };
 
   return (
@@ -78,7 +71,7 @@ const WorkerDetails = ({ workers }) => {
               </div>
               <div className="worker-basic-info">
                 <h3 className="worker-name">{worker.fullName}</h3>
-                <div className="worker-role">{getWorkerRole(worker.workerTypes)}</div>
+                <div className="worker-role">{getWorkerRole(worker.services)}</div>
                 <div className="worker-rating">
                   <span className="stars">★★★★☆</span>
                   <span className="rating-value">4.0</span>

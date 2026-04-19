@@ -26,14 +26,17 @@ const featuresData = [
 ];
 
 const servicesData = [
-  { icon: "🛡️", name: "Security Guards", count: "450+ Available", color: "#dbeafe" },
-  { icon: "👁️", name: "Watchmen", count: "300+ Available", color: "#dcfce7" },
-  { icon: "🧹", name: "Housekeeping", count: "280+ Available", color: "#fef3c7" },
-  { icon: "🚗", name: "Drivers", count: "150+ Available", color: "#f3e8ff" },
-  { icon: "🔧", name: "Skilled Labour", count: "500+ Available", color: "#ffedd5" },
-  { icon: "👷", name: "Unskilled Labour", count: "800+ Available", color: "#e0f2fe" },
-  { icon: "💼", name: "Office Staff", count: "120+ Available", color: "#fce7f3" },
-  { icon: "👥", name: "Other Staff", count: "200+ Available", color: "#ecfdf5" }
+  { icon: "⚡", name: "Electrician", count: "200+ Available", color: "#dbeafe" },
+  { icon: "🔧", name: "Plumber", count: "180+ Available", color: "#dcfce7" },
+  { icon: "🪚", name: "Carpenter", count: "150+ Available", color: "#fef3c7" },
+  { icon: "👷", name: "Daily Labour", count: "800+ Available", color: "#e0f2fe" },
+  { icon: "🔩", name: "Skilled Labour", count: "500+ Available", color: "#ffedd5" },
+  { icon: "🚗", name: "Driver", count: "150+ Available", color: "#f3e8ff" },
+  { icon: "❄️", name: "AC Technician", count: "120+ Available", color: "#ecfdf5" },
+  { icon: "🛡️", name: "Security", count: "450+ Available", color: "#fce7f3" },
+  { icon: "👁️", name: "Watchman", count: "300+ Available", color: "#f0fdf4" },
+  { icon: "💼", name: "Office Boy", count: "120+ Available", color: "#ede9fe" },
+  { icon: "🧹", name: "Housekeeping", count: "280+ Available", color: "#fff7ed" },
 ];
 
 const WorkerSection = () => {

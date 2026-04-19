@@ -11,11 +11,23 @@ const fmt = (n) => "₹" + Number(n).toLocaleString("en-IN");
 
 const formatServiceType = (type) => {
   const map = {
-    acRepair: "AC Repair",
+    "Electrician": "Electrician",
+    "Plumber": "Plumber",
+    "Carpenter": "Carpenter",
+    "Daily Labour": "Daily Labour",
+    "Skilled Labour": "Skilled Labour",
+    "Driver": "Driver",
+    "AC Technician": "AC Technician",
+    "Security": "Security",
+    "Watchman": "Watchman",
+    "Office Boy": "Office Boy",
+    "Housekeeping": "Housekeeping",
+    // Legacy fallbacks for old data
+    acRepair: "AC Technician",
     mechanicRepair: "Mechanic Repair",
-    electricalRepair: "Electrical Repair",
+    electricalRepair: "Electrician",
     electronicRepair: "Electronics Repair",
-    plumber: "Plumbing Services",
+    plumber: "Plumber",
     packersMovers: "Packers & Movers"
   };
   return map[type] || type;

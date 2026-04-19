@@ -1,7 +1,8 @@
 // backend/src/models/Worker.js
-// UPDATED: Added status field for admin approval flow
+// UPDATED: Uses centralized SERVICES constant for service enum
 
 const mongoose = require("mongoose");
+const SERVICES = require("../constants/services");
 
 const workerSchema = new mongoose.Schema({
   username: {
@@ -31,15 +32,7 @@ const workerSchema = new mongoose.Schema({
   },
   services: {
     type: [String],
-    enum: [
-      "acRepair",
-      "mechanicRepair",
-      "electricalRepair",
-      "electronicRepair",
-      "plumber",
-      "packersMovers",
-      ""
-    ],
+    enum: [...SERVICES, ""],
     default: [],
   },
   rejectionReason: {

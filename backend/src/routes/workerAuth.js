@@ -1,5 +1,5 @@
 // backend/src/routes/workerAuth.js
-// UPDATED: Blocks unapproved workers from logging in
+// UPDATED: Accepts services[] array directly, removed workerTypes object parsing
 
 const express = require("express");
 const router = express.Router();
@@ -9,11 +9,12 @@ const jwt = require("jsonwebtoken");
 const { conn } = require("../db");
 const createWorkerModel = require("../models/Worker");
 const Worker = createWorkerModel(conn);
+const SERVICES = require("../constants/services");
 
 // ── POST /api/worker-auth/signup ─────────────────────────────────────────────
 router.post("/signup", async (req, res) => {
   try {
-    const { username, phone, email, password, serviceType, workerTypes, services } = req.body;
+    const { username, phone, email, password, services } = req.body;
 
     // Check duplicate
     const existingWorker = await Worker.findOne({
@@ -27,15 +28,10 @@ router.post("/signup", async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Convert old string or object mappings into the new array format if they exist
+    // Validate services if provided
     let finalServices = [];
     if (services && Array.isArray(services)) {
-      finalServices = services;
-    } else if (serviceType) {
-      finalServices = [serviceType];
-    } else if (workerTypes) {
-      let parsed = typeof workerTypes === 'string' ? JSON.parse(workerTypes) : workerTypes;
-      finalServices = Object.keys(parsed).filter(k => parsed[k] === true);
+      finalServices = services.filter(s => SERVICES.includes(s));
     }
 
     // Create worker — status defaults to "pending"

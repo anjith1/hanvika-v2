@@ -27,14 +27,17 @@ const getLocationInfo = (location) => {
 };
 
 const serviceLabels = {
-    acRepair: 'AC Repair', mechanicRepair: 'Mechanic Repair',
-    electricalRepair: 'Electrical Repair', electronicRepair: 'Electronics Repair',
-    plumber: 'Plumbing', packersMovers: 'Packers & Movers'
+    'Electrician': 'Electrician', 'Plumber': 'Plumber', 'Carpenter': 'Carpenter',
+    'Daily Labour': 'Daily Labour', 'Skilled Labour': 'Skilled Labour', 'Driver': 'Driver',
+    'AC Technician': 'AC Technician', 'Security': 'Security', 'Watchman': 'Watchman',
+    'Office Boy': 'Office Boy', 'Housekeeping': 'Housekeeping'
 };
 
 const serviceEmojis = {
-    acRepair: '❄️', mechanicRepair: '🔧', electricalRepair: '⚡',
-    electronicRepair: '📱', plumber: '🔩', packersMovers: '📦'
+    'Electrician': '⚡', 'Plumber': '🔧', 'Carpenter': '🪚',
+    'Daily Labour': '👷', 'Skilled Labour': '🔩', 'Driver': '🚗',
+    'AC Technician': '❄️', 'Security': '🛡️', 'Watchman': '👁️',
+    'Office Boy': '💼', 'Housekeeping': '🧹'
 };
 
 const FILTERS = [

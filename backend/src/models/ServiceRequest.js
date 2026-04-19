@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const SERVICES = require("../constants/services");
 
 const serviceRequestSchema = new mongoose.Schema({
     customer: {
@@ -8,14 +9,7 @@ const serviceRequestSchema = new mongoose.Schema({
     },
     serviceType: {
         type: String,
-        enum: [
-            "acRepair",
-            "mechanicRepair",
-            "electricalRepair",
-            "electronicRepair",
-            "plumber",
-            "packersMovers"
-        ],
+        enum: SERVICES,
         required: true
     },
     location: {

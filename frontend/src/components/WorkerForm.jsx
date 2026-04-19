@@ -1,8 +1,23 @@
 // src/components/WorkerForm.jsx
+// UPDATED: Uses services[] string array instead of workerTypes{} boolean object
 import React, { useState } from "react";
 import axios from "axios";
 import "./WorkerForm.css";
 import { useNavigate } from "react-router-dom";
+
+const SERVICES = [
+  { key: "Electrician", label: "Electrician", desc: "Wiring & fixture installation" },
+  { key: "Plumber", label: "Plumber", desc: "Pipes & sanitation systems" },
+  { key: "Carpenter", label: "Carpenter", desc: "Woodwork & furniture repair" },
+  { key: "Daily Labour", label: "Daily Labour", desc: "General daily work support" },
+  { key: "Skilled Labour", label: "Skilled Labour", desc: "Specialized skilled tasks" },
+  { key: "Driver", label: "Driver", desc: "Vehicle driving services" },
+  { key: "AC Technician", label: "AC Technician", desc: "Cooling system services" },
+  { key: "Security", label: "Security", desc: "Security guard services" },
+  { key: "Watchman", label: "Watchman", desc: "Night watch & premises guard" },
+  { key: "Office Boy", label: "Office Boy", desc: "Office support & errands" },
+  { key: "Housekeeping", label: "Housekeeping", desc: "Cleaning & maintenance" },
+];
 
 const WorkerForm = () => {
   const navigate = useNavigate();
@@ -10,13 +25,7 @@ const WorkerForm = () => {
   const [formData, setFormData] = useState({
     fullName: "",
     phoneNumber: "",
-    workerTypes: {
-      acRepair: false,
-      mechanicRepair: false,
-      electricalRepair: false,
-      electronicRepair: false,
-      plumber: false,
-    },
+    services: [],
     address: "",
     city: "",
     state: "",
@@ -39,15 +48,16 @@ const WorkerForm = () => {
     }));
   };
 
-  const handleCheckboxChange = (e) => {
-    const { name, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      workerTypes: {
-        ...prev.workerTypes,
-        [name]: checked,
-      },
-    }));
+  const handleServiceToggle = (serviceKey) => {
+    setFormData((prev) => {
+      const exists = prev.services.includes(serviceKey);
+      return {
+        ...prev,
+        services: exists
+          ? prev.services.filter((s) => s !== serviceKey)
+          : [...prev.services, serviceKey],
+      };
+    });
   };
 
   // Handle file input for profile photo
@@ -79,7 +89,7 @@ const WorkerForm = () => {
     const data = new FormData();
     data.append("fullName", formData.fullName);
     data.append("phoneNumber", formData.phoneNumber);
-    data.append("workerTypes", JSON.stringify(formData.workerTypes));
+    data.append("services", JSON.stringify(formData.services));
     data.append("address", formData.address);
     data.append("city", formData.city);
     data.append("state", formData.state);
@@ -195,82 +205,21 @@ const WorkerForm = () => {
             Offered Services
           </legend>
           <div className="checkbox-grid">
-            <label
-              className={`checkbox-label ${formData.workerTypes.acRepair ? "checked" : ""
-                }`}
-            >
-              <input
-                type="checkbox"
-                name="acRepair"
-                checked={formData.workerTypes.acRepair}
-                onChange={handleCheckboxChange}
-              />
-              <span className="checkmark"></span>
-              <span className="service-title">AC Repair &amp; Maintenance</span>
-              <span className="service-desc">Cooling system services</span>
-            </label>
-
-            <label
-              className={`checkbox-label ${formData.workerTypes.mechanicRepair ? "checked" : ""
-                }`}
-            >
-              <input
-                type="checkbox"
-                name="mechanicRepair"
-                checked={formData.workerTypes.mechanicRepair}
-                onChange={handleCheckboxChange}
-              />
-              <span className="checkmark"></span>
-              <span className="service-title">Auto Mechanic Services</span>
-              <span className="service-desc">Vehicle repair &amp; maintenance</span>
-            </label>
-
-            <label
-              className={`checkbox-label ${formData.workerTypes.electricalRepair ? "checked" : ""
-                }`}
-            >
-              <input
-                type="checkbox"
-                name="electricalRepair"
-                checked={formData.workerTypes.electricalRepair}
-                onChange={handleCheckboxChange}
-              />
-              <span className="checkmark"></span>
-              <span className="service-title">Electrical Services</span>
-              <span className="service-desc">
-                Wiring &amp; fixture installation
-              </span>
-            </label>
-
-            <label
-              className={`checkbox-label ${formData.workerTypes.electronicRepair ? "checked" : ""
-                }`}
-            >
-              <input
-                type="checkbox"
-                name="electronicRepair"
-                checked={formData.workerTypes.electronicRepair}
-                onChange={handleCheckboxChange}
-              />
-              <span className="checkmark"></span>
-              <span className="service-title">Electronic Repair</span>
-              <span className="service-desc">Devices &amp; appliances repair</span>
-            </label>
-
-            <label
-              className={`checkbox-label ${formData.workerTypes.plumber ? "checked" : ""
-                }`}
-            >
-              <input
-                type="checkbox"
-                name="plumber"
-                checked={formData.workerTypes.plumber}
-                onChange={handleCheckboxChange}
-              />
-              <span className="checkmark"></span>
-              <span className="service-title">Plumbing Services</span>
-              <span className="service-desc">Pipes &amp; sanitation systems</span>
-            </label>
+            {SERVICES.map((svc) => (
+              <label
+                key={svc.key}
+                className={`checkbox-label ${formData.services.includes(svc.key) ? "checked" : ""}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={formData.services.includes(svc.key)}
+                  onChange={() => handleServiceToggle(svc.key)}
+                />
+                <span className="checkmark"></span>
+                <span className="service-title">{svc.label}</span>
+                <span className="service-desc">{svc.desc}</span>
+              </label>
+            ))}
           </div>
         </fieldset>
 
@@ -336,7 +285,7 @@ const WorkerForm = () => {
           />
         </div>
 
-        {/* ── Aadhar Number (missing — now added) ── */}
+        {/* ── Aadhar Number ── */}
         <div className="form-row">
           <div className="form-group">
             <label>Aadhar Number *</label>
@@ -356,7 +305,7 @@ const WorkerForm = () => {
             <span className="wf-hint">{formData.aadharNumber.length}/12 digits</span>
           </div>
 
-          {/* ── PAN Number (missing — now added) ── */}
+          {/* ── PAN Number (optional) ── */}
           <div className="form-group">
             <label>PAN Card Number </label>
             <input
@@ -404,9 +353,6 @@ const WorkerForm = () => {
             </select>
           </div>
         </div>
-
-
-
 
         <div className="form-group">
           <label>Profile Photo</label>

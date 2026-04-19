@@ -1,6 +1,8 @@
 // models/WorkerForm.js — uses the single shared DB connection from db.js
+// UPDATED: Replaced workerTypes boolean object with services string array
 const mongoose = require("mongoose");
 const { conn } = require("../db");
+const SERVICES = require("../constants/services");
 
 const workerFormSchema = new mongoose.Schema({
   fullName: {
@@ -20,13 +22,10 @@ const workerFormSchema = new mongoose.Schema({
     required: false,
     default: "",
   },
-  workerTypes: {
-    acRepair: { type: Boolean, default: false },
-    mechanicRepair: { type: Boolean, default: false },
-    electricalRepair: { type: Boolean, default: false },
-    electronicRepair: { type: Boolean, default: false },
-    plumber: { type: Boolean, default: false },
-    packersMovers: { type: Boolean, default: false },
+  services: {
+    type: [String],
+    enum: SERVICES,
+    default: [],
   },
   address: {
     type: String,

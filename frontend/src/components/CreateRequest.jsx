@@ -41,20 +41,17 @@ const CreateRequest = () => {
     const mapRef = useRef(null);
 
     const serviceOptions = [
-        { value: "acRepair", label: "AC Repair" },
-        { value: "mechanicRepair", label: "Mechanic Repair" },
-        { value: "electricalRepair", label: "Electrical Repair" },
-        { value: "electronicRepair", label: "Electronics Repair" },
-        { value: "plumber", label: "Plumbing Services" },
-        { value: "packersMovers", label: "Packers & Movers" },
-        { value: "Security Guards", label: "Security Guards" },
-        { value: "Watchmen", label: "Watchmen" },
-        { value: "Housekeeping", label: "Housekeeping" },
-        { value: "Drivers", label: "Drivers" },
+        { value: "Electrician", label: "Electrician" },
+        { value: "Plumber", label: "Plumber" },
+        { value: "Carpenter", label: "Carpenter" },
+        { value: "Daily Labour", label: "Daily Labour" },
         { value: "Skilled Labour", label: "Skilled Labour" },
-        { value: "Unskilled Labour", label: "Unskilled Labour" },
-        { value: "Office Staff", label: "Office Staff" },
-        { value: "Other Staff", label: "Other Staff" }
+        { value: "Driver", label: "Driver" },
+        { value: "AC Technician", label: "AC Technician" },
+        { value: "Security", label: "Security" },
+        { value: "Watchman", label: "Watchman" },
+        { value: "Office Boy", label: "Office Boy" },
+        { value: "Housekeeping", label: "Housekeeping" },
     ];
 
     // Get geolocation on mount

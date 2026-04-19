@@ -138,10 +138,10 @@ const ReviewForm = () => {
     if (name === 'worker_name' && value) {
       const selectedWorker = workers.find(worker => worker.fullName === value);
       if (selectedWorker) {
-        // Extract the profession (first worker type that is true)
-        const profession = Object.entries(selectedWorker.workerTypes)
-          .filter(([_, isSelected]) => isSelected)
-          .map(([type]) => type)[0] || 'N/A';
+        // Extract the profession (first service in array)
+        const profession = (selectedWorker.services && selectedWorker.services.length > 0)
+          ? selectedWorker.services[0]
+          : 'N/A';
 
         // Update both worker_name and product_name (profession)
         setFormData({
@@ -370,10 +370,7 @@ const ReviewForm = () => {
                 ) : (
                   workers.map((worker) => (
                     <option key={worker._id} value={worker.fullName}>
-                      {worker.fullName} - {Object.entries(worker.workerTypes)
-                        .filter(([_, value]) => value)
-                        .map(([key]) => key)
-                        .join(', ')}
+                      {worker.fullName} - {(worker.services || []).join(', ')}
                     </option>
                   ))
                 )}

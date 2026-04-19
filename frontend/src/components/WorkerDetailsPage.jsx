@@ -13,27 +13,24 @@ const WorkerDetailsPage = () => {
   const [error, setError] = useState(null);
   const [debugInfo, setDebugInfo] = useState(null);
 
-  // Map categoryId to worker types in the database
-  const categoryToWorkerType = {
-    ac: 'acRepair',
-    mechanic: 'mechanicRepair',
-    electrical: 'electricalRepair',
-    electronics: 'electronicRepair',
-    plumber: 'plumber',
-    packers: 'packersMovers'
+  // Map categoryId to service names in the database
+  const categoryToService = {
+    electrician: 'Electrician',
+    plumber: 'Plumber',
+    carpenter: 'Carpenter',
+    'daily-labour': 'Daily Labour',
+    'skilled-labour': 'Skilled Labour',
+    driver: 'Driver',
+    'ac-technician': 'AC Technician',
+    security: 'Security',
+    watchman: 'Watchman',
+    'office-boy': 'Office Boy',
+    housekeeping: 'Housekeeping',
   };
 
   // Convert category ID to a more readable format
   const getCategoryName = (catId) => {
-    switch (catId) {
-      case 'ac': return 'AC Repair';
-      case 'mechanic': return 'Mechanic';
-      case 'electrical': return 'Electrical';
-      case 'electronics': return 'Electronics';
-      case 'plumber': return 'Plumber';
-      case 'packers': return 'Packers & Movers';
-      default: return catId.toUpperCase();
-    }
+    return categoryToService[catId] || catId;
   };
 
   useEffect(() => {
@@ -43,11 +40,11 @@ const WorkerDetailsPage = () => {
       setDebugInfo(null);
 
       try {
-        // Get the worker type from the categoryId
-        const workerType = categoryToWorkerType[categoryId];
+        // Get the service name from the categoryId
+        const serviceType = categoryToService[categoryId];
 
         // If category is not recognized, handle it
-        if (!workerType) {
+        if (!serviceType) {
           setWorkers([]);
           setError(`Unknown category: ${categoryId}`);
           setLoading(false);
@@ -55,10 +52,10 @@ const WorkerDetailsPage = () => {
         }
 
         // Set debug info about what we're trying to fetch
-        setDebugInfo(`Fetching workers with ${workerType}=true from ${import.meta.env.VITE_API_URL}/api/worker-form/by-type/${workerType}`);
+        setDebugInfo(`Fetching workers with service=${serviceType} from ${import.meta.env.VITE_API_URL}/api/worker-form/by-type/${serviceType}`);
 
-        // Fetch workers based on their services/worker types
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/worker-form/by-type/${workerType}`);
+        // Fetch workers based on their services
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/worker-form/by-type/${serviceType}`);
 
         console.log('API Response:', response.data);
 
